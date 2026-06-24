@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Nexxen Data Path Finder</title>
+<style>
+:root{
+  --navy:#071B2C;--navy2:#0B263B;--mint:#9EF5C9;--mint2:#D9FFEE;
+  --white:#FFFFFF;--ink:#10202F;--g50:#F6F8FA;--g100:#E9EEF2;
+  --g500:#607080;--warn:#FFE9A3;--err:#FFB7B7;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;}
+button{cursor:pointer;border:none;font-family:inherit;font-size:inherit;}
+a{color:inherit;text-decoration:none;}
+
+/* Topbar */
+#topbar{background:var(--navy2);border-bottom:1px solid rgba(158,245,201,.15);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.logo{font-size:15px;font-weight:700;color:var(--mint);letter-spacing:.02em;}
+.logo span{color:var(--white);font-weight:400;opacity:.5;margin-left:8px;font-size:13px;}
+#btn-home{background:transparent;color:var(--g500);font-size:13px;padding:6px 14px;border-radius:6px;border:1px solid transparent;display:none;}
+#btn-home:hover{color:var(--white);border-color:rgba(255,255,255,.15);}
+
+/* Views */
+.view{display:none;}
+.view.active{display:block;}
+
+/* HOME */
+#home{max-width:640px;margin:0 auto;padding:96px 24px 60px;}
+.home-prompt{text-align:center;margin-bottom:40px;}
+.home-prompt h1{font-size:26px;font-weight:700;line-height:1.4;margin-bottom:0;}
+.home-search-wrap{position:relative;margin-bottom:16px;}
+.home-search{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px 20px;color:#fff;font-size:17px;outline:none;font-family:inherit;transition:border-color .15s;resize:none;overflow:hidden;min-height:56px;box-sizing:border-box;line-height:1.5;}
+.home-search:focus{border-color:var(--mint);background:rgba(255,255,255,.09);}
+.home-search::placeholder{color:var(--g500);}
+.analysis-card{background:var(--navy2);border:1px solid rgba(158,245,201,.25);border-radius:var(--r);padding:20px 24px;margin-top:8px;}
+.analysis-card h3{font-size:13px;font-weight:600;color:var(--mint);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px;}
+.analysis-module{font-size:18px;font-weight:700;margin:0 0 14px;}
+.analysis-section{font-size:12px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;}
+.analysis-answers{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.analysis-answer{display:grid;grid-template-columns:1fr auto;align-items:start;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.analysis-answer:last-child{border-bottom:none;}
+.analysis-answer .aq-label{color:var(--g500);line-height:1.4;}
+.analysis-answer .aq-val{font-weight:600;color:#fff;text-align:right;white-space:nowrap;}
+.analysis-answer .aq-val.unk{color:var(--g500);font-style:italic;font-weight:400;}
+.analysis-path{background:rgba(158,245,201,.08);border:1px solid rgba(158,245,201,.2);border-radius:8px;padding:12px 14px;margin-bottom:14px;}
+.analysis-path-name{font-weight:700;font-size:15px;color:var(--mint);margin-bottom:3px;}
+.analysis-path-desc{font-size:13px;color:rgba(255,255,255,.7);}
+.analysis-conf{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;margin-bottom:14px;}
+.analysis-conf.High{background:rgba(158,245,201,.15);color:var(--mint);}
+.analysis-conf.Medium{background:rgba(255,233,163,.12);color:var(--warn);}
+.analysis-conf.Low{background:rgba(255,183,183,.12);color:var(--err);}
+.analysis-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.analysis-btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;}
+.analysis-btn.primary{background:var(--mint);color:var(--ink);}
+.analysis-btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.2);color:#fff;}
+.analysis-btn:hover{opacity:.85;}
+.analysis-spinner{text-align:center;padding:20px;color:var(--g500);font-size:13px;}
+.home-idk{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:32px;}
+.home-idk-btn{background:none;color:var(--g500);font-size:13px;border:none;text-decoration:underline;cursor:pointer;padding:0;}
+.home-idk-btn:hover{color:var(--mint);}
+#home-results{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.scard{background:var(--navy2);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:20px;text-align:left;color:var(--white);transition:all .15s;width:100%;}
+.scard:hover{border-color:var(--mint);background:rgba(158,245,201,.06);transform:translateY(-1px);}
+.scard.unk{border-style:dashed;}
+.scard-icon{font-size:20px;margin-bottom:10px;}
+.scard h3{font-size:14px;font-weight:600;margin-bottom:5px;}
+.scard p{font-size:12px;color:var(--g500);line-height:1.5;}
+.home-hint{text-align:center;font-size:13px;color:var(--g500);padding:24px 0;}
+.home-no-match{text-align:center;padding:28px 0;}
+.home-no-match p{font-size:14px;color:var(--g500);margin-bottom:12px;}
+
+/* WORKSPACE */
+#workspace{display:flex;height:calc(100vh - 56px);overflow:hidden;}
+#question-area{flex:1;overflow-y:auto;padding:40px 48px;}
+#sidebar{width:300px;border-left:1px solid rgba(255,255,255,.08);background:var(--navy2);overflow-y:auto;}
+
+/* Module tag */
+.mod-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(158,245,201,.12);color:var(--mint);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:4px;margin-bottom:24px;}
+
+/* Progress */
+.prog-wrap{margin-bottom:28px;}
+.prog-meta{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--g500);}
+.prog-bar{height:3px;background:rgba(255,255,255,.1);border-radius:2px;}
+.prog-fill{height:3px;background:var(--mint);border-radius:2px;transition:width .3s;}
+
+/* Question card */
+.qcard{background:var(--navy2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:32px;margin-bottom:20px;}
+.qtext{font-size:20px;font-weight:600;line-height:1.4;margin-bottom:10px;}
+.qhelper{font-size:13px;color:var(--g500);line-height:1.6;margin-bottom:26px;}
+.chips{display:flex;flex-wrap:wrap;gap:10px;}
+.chip{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--white);font-size:13px;font-weight:500;padding:9px 18px;border-radius:100px;transition:all .15s;}
+.chip:hover{border-color:var(--mint);color:var(--mint);background:rgba(158,245,201,.06);}
+.chip.sel{background:var(--mint);color:var(--ink);border-color:var(--mint);font-weight:600;}
+.chip.unk-chip{border-style:dashed;color:var(--g500);}
+.chip.unk-chip:hover{border-color:var(--warn);color:var(--warn);background:rgba(255,233,163,.06);}
+.chip.unk-chip.sel{background:var(--warn);color:var(--ink);border-color:var(--warn);}
+.free-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;font-family:inherit;}
+.free-input:focus{border-color:var(--mint);}
+
+/* Input type badge */
+.q-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.q-header .qtext{margin-bottom:0;flex:1;}
+.input-type-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:4px;}
+.itype-text{background:rgba(158,245,201,.1);color:var(--mint);}
+.itype-dropdown{background:rgba(255,255,255,.08);color:var(--g500);}
+.itype-multi{background:rgba(255,233,163,.1);color:var(--warn);}
+
+/* Dropdown */
+.dropdown-wrap{position:relative;display:block;}
+.q-select{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 36px 10px 14px;color:#fff;font-size:14px;outline:none;font-family:inherit;appearance:none;-webkit-appearance:none;cursor:pointer;}
+.q-select:focus{border-color:var(--mint);}
+.q-select option{background:var(--navy2);color:#fff;}
+.select-arrow{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--g500);pointer-events:none;font-size:12px;}
+
+/* Autocomplete */
+.autocomplete-wrap{position:relative;}
+.suggest-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--navy2);border:1px solid rgba(158,245,201,.25);border-radius:8px;max-height:220px;overflow-y:auto;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.suggest-item{padding:10px 14px;font-size:13px;cursor:pointer;transition:background .1s;}
+.suggest-item:hover,.suggest-item.active{background:rgba(158,245,201,.1);color:var(--mint);}
+.suggest-loading{font-size:12px;color:var(--g500);padding:6px 0;display:flex;align-items:center;gap:6px;}
+.text-wrap{position:relative;}
+
+/* Loading spinner */
+.loading-wrap{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--g500);padding:10px 0;}
+.loading-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--mint);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Nav */
+.qnav{display:flex;gap:10px;margin-top:24px;align-items:center;}
+.btn-back{background:transparent;color:var(--g500);font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.1);}
+.btn-back:hover{color:var(--white);}
+.btn-next{background:var(--mint);color:var(--ink);font-size:13px;font-weight:600;padding:8px 20px;border-radius:8px;}
+.btn-next:disabled{opacity:.35;cursor:not-allowed;}
+.btn-finish{background:var(--mint);color:var(--ink);font-size:14px;font-weight:700;padding:10px 24px;border-radius:8px;}
+.btn-skip{background:transparent;color:var(--g500);font-size:12px;padding:8px 14px;border-radius:8px;}
+
+/* Sidebar sections */
+.sb-section{padding:20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g500);margin-bottom:14px;}
+
+/* Path preview */
+.path-prev{background:rgba(158,245,201,.06);border:1px solid rgba(158,245,201,.2);border-radius:10px;padding:14px;margin-bottom:8px;}
+.path-prev.low{background:rgba(255,233,163,.06);border-color:rgba(255,233,163,.25);}
+.path-prev-name{font-size:13px;font-weight:600;color:var(--mint);margin-bottom:4px;}
+.path-prev-name.low{color:var(--warn);}
+.path-prev-desc{font-size:11px;color:var(--g500);line-height:1.5;margin-top:6px;}
+.conf-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}
+.conf-High{background:rgba(158,245,201,.15);color:var(--mint);}
+.conf-Medium{background:rgba(255,233,163,.15);color:var(--warn);}
+.conf-Low{background:rgba(255,183,183,.15);color:var(--err);}
+
+/* Tray */
+.tray-item{margin-bottom:12px;}
+.tray-q{font-size:11px;color:var(--g500);margin-bottom:2px;line-height:1.4;}
+.tray-row{display:flex;align-items:center;gap:6px;}
+.tray-val{font-size:12px;font-weight:500;}
+.tray-val.known{color:var(--mint);}
+.tray-val.unkn{color:var(--warn);font-style:italic;}
+.edit-btn{background:none;color:var(--g500);font-size:11px;text-decoration:underline;padding:0;border:none;}
+.edit-btn:hover{color:var(--mint);}
+
+/* Result */
+#result-area{max-width:740px;}
+.result-h{margin-bottom:24px;}
+.result-h h2{font-size:24px;font-weight:700;margin-bottom:8px;}
+.result-path{color:var(--mint);}
+.rsection{background:var(--navy2);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:22px;margin-bottom:14px;}
+.rsection h4{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--g500);margin-bottom:12px;}
+.rsection p,.rsection li{font-size:14px;line-height:1.6;color:var(--g100);}
+.rsection ul,.rsection ol{padding-left:18px;}
+.rsection li{margin-bottom:5px;}
+.routing-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.routing-item{background:rgba(255,255,255,.04);border-radius:8px;padding:12px;}
+.routing-item label{font-size:11px;color:var(--g500);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;}
+.routing-item span{font-size:13px;font-weight:500;font-family:monospace;}
+.unk-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--warn);margin-bottom:6px;}
+.unk-dot{min-width:18px;height:18px;background:rgba(255,233,163,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+.escalation{background:rgba(255,183,183,.08);border:1px solid rgba(255,183,183,.3);border-radius:12px;padding:22px;margin-bottom:14px;}
+.escalation h3{color:var(--err);font-size:15px;margin-bottom:8px;}
+.escalation p{font-size:14px;color:var(--g100);line-height:1.6;}
+.copy-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.btn-copy{background:rgba(255,255,255,.07);color:var(--white);font-size:12px;font-weight:500;padding:7px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.1);transition:all .15s;}
+.btn-copy:hover{background:rgba(158,245,201,.1);border-color:rgba(158,245,201,.3);color:var(--mint);}
+.btn-copy.copied{background:rgba(158,245,201,.15);border-color:var(--mint);color:var(--mint);}
+.btn-restart{background:transparent;color:var(--g500);font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.1);margin-top:16px;}
+.btn-restart:hover{color:var(--white);}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--mint);color:var(--ink);font-size:13px;font-weight:600;padding:10px 22px;border-radius:100px;box-shadow:0 4px 16px rgba(0,0,0,.3);opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;}
+#toast.show{opacity:1;}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width:640px){
+  /* Home */
+  #home{padding:56px 20px 48px;}
+  .home-prompt h1{font-size:22px;}
+  .home-search{font-size:15px;padding:14px 16px;}
+  #home-results{grid-template-columns:1fr;}
+
+  /* Topbar */
+  #topbar{padding:0 16px;}
+  .logo span{display:none;}
+
+  /* Workspace: stack vertically instead of side-by-side */
+  #workspace{flex-direction:column;height:auto;overflow:visible;}
+  #workspace-view{overflow-y:auto;}
+  #question-area{padding:24px 20px 16px;overflow:visible;}
+  #sidebar{width:100%;border-left:none;border-top:1px solid rgba(255,255,255,.08);}
+
+  /* Question card */
+  .qcard{padding:22px 18px;}
+  .qtext{font-size:17px;}
+  .q-header{flex-direction:column;gap:8px;align-items:flex-start;}
+  .input-type-badge{margin-top:0;}
+  .chips{gap:8px;}
+  .chip{font-size:12px;padding:8px 14px;}
+
+  /* Nav buttons */
+  .qnav{flex-wrap:wrap;gap:8px;}
+  .btn-next,.btn-finish{width:100%;text-align:center;padding:12px;}
+  .btn-back{order:-1;}
+
+  /* Result */
+  #result-area{max-width:100%;}
+  .result-h h2{font-size:20px;}
+  .routing-grid{grid-template-columns:1fr;}
+  .copy-row{flex-direction:column;}
+  .btn-copy{width:100%;text-align:center;padding:10px;}
+
+  /* Progress */
+  .prog-meta{font-size:11px;}
+
+  /* Chat */
+  #chat-panel{width:100%;height:100%;bottom:0;right:0;border-radius:0;max-height:100vh;}
+  #chat-fab{bottom:16px;right:16px;}
+}
+
+/* ── Chat FAB ───────────────────────────────────────────────────────────── */
+#chat-fab{position:fixed;bottom:28px;right:28px;z-index:200;width:52px;height:52px;border-radius:50%;background:var(--mint);color:var(--ink);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(0,0,0,.35);transition:transform .15s,box-shadow .15s;font-size:22px;}
+#chat-fab:hover{transform:scale(1.07);box-shadow:0 6px 24px rgba(0,0,0,.45);}
+#chat-fab.open{background:var(--navy2);color:var(--white);border:1px solid rgba(255,255,255,.15);}
+.chat-badge{position:absolute;top:-3px;right:-3px;background:var(--err);width:10px;height:10px;border-radius:50%;display:none;}
+.chat-badge.show{display:block;}
+
+/* ── Chat panel ─────────────────────────────────────────────────────────── */
+#chat-panel{position:fixed;bottom:92px;right:28px;z-index:199;width:360px;max-height:560px;background:var(--navy2);border:1px solid rgba(255,255,255,.12);border-radius:16px;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,.5);transition:opacity .2s,transform .2s;transform-origin:bottom right;}
+#chat-panel.hidden{opacity:0;transform:scale(.95) translateY(8px);pointer-events:none;}
+
+#chat-header{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.chat-header-left{display:flex;align-items:center;gap:10px;}
+.chat-avatar{width:30px;height:30px;border-radius:50%;background:rgba(158,245,201,.15);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.chat-title{font-size:13px;font-weight:600;}
+.chat-sub{font-size:11px;color:var(--g500);}
+#chat-close{background:none;border:none;color:var(--g500);font-size:18px;line-height:1;padding:2px 4px;cursor:pointer;}
+#chat-close:hover{color:var(--white);}
+
+#chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.msg{display:flex;flex-direction:column;max-width:85%;}
+.msg.bot{align-self:flex-start;}
+.msg.user{align-self:flex-end;align-items:flex-end;}
+.msg-bubble{padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.55;}
+.msg.bot .msg-bubble{background:rgba(255,255,255,.07);color:var(--white);border-bottom-left-radius:3px;}
+.msg.user .msg-bubble{background:var(--mint);color:var(--ink);font-weight:500;border-bottom-right-radius:3px;}
+.msg-time{font-size:10px;color:var(--g500);margin-top:3px;padding:0 2px;}
+
+/* Quick reply chips inside chat */
+.chat-qr{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;max-width:100%;}
+.chat-qr-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--white);font-size:12px;font-weight:500;padding:6px 12px;border-radius:100px;cursor:pointer;transition:all .12s;}
+.chat-qr-chip:hover{border-color:var(--mint);color:var(--mint);background:rgba(158,245,201,.08);}
+.chat-qr-chip.unk{border-style:dashed;color:var(--g500);}
+
+/* Typing indicator */
+.typing-indicator{display:flex;align-items:center;gap:4px;padding:10px 13px;background:rgba(255,255,255,.07);border-radius:12px;border-bottom-left-radius:3px;width:fit-content;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--g500);animation:tdot 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes tdot{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+/* Result chip in chat */
+.chat-result{background:rgba(158,245,201,.08);border:1px solid rgba(158,245,201,.2);border-radius:10px;padding:12px;margin-top:4px;max-width:100%;}
+.chat-result-path{font-size:13px;font-weight:700;color:var(--mint);margin-bottom:4px;}
+.chat-result-desc{font-size:12px;color:var(--g500);line-height:1.5;margin-bottom:8px;}
+.chat-result-btn{background:var(--mint);color:var(--ink);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;border:none;cursor:pointer;margin-right:6px;margin-top:4px;}
+.chat-result-btn.ghost{background:rgba(255,255,255,.07);color:var(--white);border:1px solid rgba(255,255,255,.12);}
+
+/* Input row */
+#chat-input-row{padding:10px 12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px;flex-shrink:0;}
+#chat-input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;outline:none;font-family:inherit;}
+#chat-input:focus{border-color:var(--mint);}
+#chat-send{background:var(--mint);color:var(--ink);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;}
+#chat-send:hover{opacity:.85;}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div style="display:flex;align-items:center;">
+    <span class="logo">Nexxen <span>Data Path Finder</span></span>
+  </div>
+  <button id="btn-home" onclick="showHome()">← Home</button>
+</div>
+
+<!-- HOME VIEW -->
+<div id="home" class="view active">
+  <div class="home-prompt">
+    <h1>What type of data are you looking to onboard to Nexxen?</h1>
+  </div>
+  <div class="home-search-wrap">
+    <textarea id="home-search" class="home-search" placeholder="e.g. emails, IP addresses, mobile IDs… or paste a full email thread" autocomplete="off" rows="1"></textarea>
+  </div>
+  <div class="home-idk">
+    <span style="font-size:13px;color:var(--g500);">Not sure what you have?</span>
+    <button class="home-idk-btn" id="btn-idk">Show all options →</button>
+  </div>
+  <div id="home-results"></div>
+</div>
+
+<!-- WORKSPACE VIEW -->
+<div id="workspace-view" class="view">
+  <div id="workspace">
+    <div id="question-area">
+      <div class="mod-tag" id="mod-tag"></div>
+      <div id="question-slot"></div>
+    </div>
+    <div id="sidebar">
+      <div class="sb-section" id="path-preview-section">
+        <div class="sb-title">Likely path</div>
+        <div id="path-preview-body"><div style="font-size:12px;color:var(--g500);">Answer questions to see likely paths.</div></div>
+      </div>
+      <div class="sb-section" id="tray-section">
+        <div class="sb-title">Answers so far</div>
+        <div id="tray-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- CHAT -->
+<button id="chat-fab" title="Chat with the Data Path Assistant">
+  💬
+  <span class="chat-badge" id="chat-badge"></span>
+</button>
+
+<div id="chat-panel" class="hidden">
+  <div id="chat-header">
+    <div class="chat-header-left">
+      <div class="chat-avatar">🤖</div>
+      <div>
+        <div class="chat-title">Data Path Assistant</div>
+        <div class="chat-sub">Powered by module logic</div>
+      </div>
+    </div>
+    <button id="chat-close" title="Close">✕</button>
+  </div>
+  <div id="chat-messages"></div>
+  <div id="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Describe your data or ask a question…" autocomplete="off"/>
+    <button id="chat-send">Send</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const MODULES = [
+  {
+    id:"pii", label:"PII / CRM data", icon:"👤",
+    description:"Emails, hashed emails, phone, name/address, or customer lists.",
+    questions:[
+      {id:"pii_type", text:"What type of customer data does the buyer have?", helper:"Pick the closest match. If multiple types, pick the primary one.", answers:["Email","Hashed email","Phone","Name and address","Customer ID","MAID","RampID","UID2","ID5","Mixed file"]},
+      {id:"pii_state", text:"Is the data raw PII, hashed PII, or already mapped to an ad ID?", helper:"Raw PII (e.g. plain email) requires an onboarding step. Hashed or ID-mapped data may skip it.", answers:["Raw PII","Hashed PII","Already mapped to ad ID"]},
+      {id:"pii_onboarder", text:"Does the buyer already work with a data onboarder?", helper:"E.g. LiveRamp, Neustar, Acxiom, Experian.", answers:["Yes — LiveRamp","Yes — other onboarder","No onboarder"]},
+      {id:"pii_use_case", text:"Is this for targeting, suppression, measurement, or all of the above?", helper:"Affects which path and which teams need to be involved.", answers:["Targeting","Suppression","Measurement","Targeting + Suppression","All of the above"]},
+      {id:"pii_scope", text:"Is this for one advertiser or broader marketplace access?", helper:"Single-advertiser data stays in a closed segment. Marketplace data requires additional review.", answers:["One advertiser","Multiple advertisers","Marketplace / broadly available"]},
+      {id:"pii_privacy", text:"Are there any known legal, privacy, or consent restrictions?", helper:"Flag early — privacy or consent issues can block or reshape the path.", answers:["No known issues","Consent restrictions mentioned","Legal review in progress"]},
+    ],
+    paths:[
+      {id:"pii_direct_onboarder", name:"Direct via existing onboarder", desc:"Buyer routes PII through their onboarder (e.g. LiveRamp) and delivers resolved IDs to Nexxen.", bestWhen:["Buyer has LiveRamp or equivalent","Data is hashed or resolved at source"]},
+      {id:"pii_nexxen_mapping", name:"Nexxen identity mapping", desc:"Nexxen handles identity resolution internally. Buyer delivers raw or hashed file.", bestWhen:["Buyer has no onboarder","File is raw or hashed PII"]},
+      {id:"pii_suppression", name:"Suppression only", desc:"Customer list used to exclude existing customers from targeting.", bestWhen:["Use case is suppression only"]},
+      {id:"pii_measurement", name:"Measurement only", desc:"Data is ingested for attribution and reporting, not targeting.", bestWhen:["Use case is measurement only"]},
+      {id:"pii_reseller", name:"Reseller agreement path", desc:"PII flows via a reseller agreement. Requires commercial team review.", bestWhen:["Reseller is already contracted"]},
+      {id:"pii_privacy_review", name:"Legal / Privacy review required", desc:"A privacy or consent issue was flagged. Path cannot be assigned until cleared.", bestWhen:["Consent restriction mentioned","Legal review in progress"], escalate:true},
+      {id:"pii_dataops", name:"Escalate to DataOps", desc:"Data shape or consent posture requires DataOps review before a path can be assigned.", bestWhen:["Mixed IDs","Privacy flag raised","Onboarder unknown"], escalate:true},
+    ],
+  },
+  {
+    id:"ip", label:"IP addresses", icon:"🌐",
+    description:"The buyer has IPs, household IPs, or IPs mapped to audience segments.",
+    questions:[
+      {id:"ip_shape", text:"What is in the file?", helper:"This tells us whether the file is a single audience or a segment-mapped file.", answers:["IP only","IP plus segment IDs","IP plus other metadata"]},
+      {id:"ip_delivery", text:"Does the buyer have a delivery location?", helper:"E.g. SFTP, Partner Portal, or a Nexxen-managed location.", answers:["Yes — SFTP","Yes — Partner Portal","Yes — other","No delivery location"]},
+      {id:"ip_segments", text:"Is this one segment or multiple segments?", answers:["One segment","Multiple segments"]},
+      {id:"ip_scope", text:"Is this for one advertiser or marketplace availability?", answers:["One advertiser","Marketplace / broadly available"]},
+      {id:"ip_cadence", text:"Is the file static (one-time) or recurring?", helper:"Recurring files need a delivery schedule and refresh logic.", answers:["One-time / static","Recurring"]},
+    ],
+    paths:[
+      {id:"ip_platform_single", name:"Platform upload — single segment", desc:"Buyer uploads an IP-only file in-platform as a single audience segment.", bestWhen:["IP only file","One segment","One advertiser"]},
+      {id:"ip_platform_multi", name:"Platform upload — multi-segment", desc:"IP file with segment IDs uploaded in-platform and split into multiple segments.", bestWhen:["IP plus segment IDs","Multiple segments"]},
+      {id:"ip_partner_portal", name:"Partner Portal file delivery", desc:"File is delivered via Partner Portal.", bestWhen:["Buyer has Partner Portal access"]},
+      {id:"ip_sftp", name:"SFTP recurring delivery", desc:"IP file delivered via SFTP on a recurring schedule.", bestWhen:["Recurring file","SFTP delivery location"]},
+      {id:"ip_taxonomy", name:"Taxonomy required first", desc:"File has segment IDs but no taxonomy is available. Taxonomy must be defined before ingestion.", bestWhen:["Segment IDs present but no taxonomy"]},
+      {id:"ip_metadata", name:"Metadata review required", desc:"File has non-standard metadata. DataOps must review before assigning a path.", bestWhen:["IP plus other metadata"], escalate:true},
+      {id:"ip_dataops", name:"Escalate to DataOps", desc:"File shape, delivery, or segment structure is unclear.", bestWhen:["Multiple unknowns","Conflicting signals"], escalate:true},
+    ],
+  },
+  {
+    id:"maid", label:"Mobile IDs", icon:"📱",
+    description:"IDFAs, GAIDs, or other mobile advertising IDs.",
+    questions:[
+      {id:"maid_type", text:"What type of mobile IDs does the buyer have?", helper:"iOS uses IDFA. Android uses GAID.", answers:["IDFA (iOS)","GAID (Android)","Mixed IDFA + GAID"]},
+      {id:"maid_source", text:"Where did the buyer get these IDs?", helper:"Source affects privacy and delivery requirements.", answers:["First-party app data","Third-party data provider","CRM/DMP export"]},
+      {id:"maid_use_case", text:"What is the intended use?", answers:["Targeting","Measurement / attribution","Suppression","Audience building"]},
+      {id:"maid_delivery", text:"How will the file be delivered?", answers:["SFTP","Partner Portal","In-platform upload"]},
+      {id:"maid_cadence", text:"Is this a one-time file or recurring?", answers:["One-time","Recurring"]},
+    ],
+    paths:[
+      {id:"maid_platform", name:"In-platform MAID upload", desc:"MAID file uploaded directly in-platform.", bestWhen:["One-time","Single segment"]},
+      {id:"maid_sftp", name:"SFTP MAID delivery", desc:"Recurring MAID file delivered via SFTP.", bestWhen:["Recurring","SFTP available"]},
+      {id:"maid_portal", name:"Partner Portal MAID", desc:"MAID file delivered via Partner Portal.", bestWhen:["Partner Portal access confirmed"]},
+      {id:"maid_privacy", name:"Privacy / consent review", desc:"MAID data source or consent posture requires review before ingestion.", bestWhen:["Third-party source unclear","Consent not confirmed"], escalate:true},
+      {id:"maid_dataops", name:"Escalate to DataOps", desc:"Mobile ID type or delivery path is unclear.", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"cookie", label:"Cookies / Nexxen IDs", icon:"🍪",
+    description:"Browser cookies or Nexxen-native user IDs.",
+    questions:[
+      {id:"cookie_type", text:"What type of IDs does the buyer have?", answers:["Nexxen cookies (Nexxen-native)","Third-party cookies","Nexxen user IDs","Browser-level IDs (non-cookie)"]},
+      {id:"cookie_source", text:"Where do these IDs come from?", answers:["Nexxen pixel on site","Third-party DMP","Publisher pass-through"]},
+      {id:"cookie_use_case", text:"What is the intended use?", answers:["Targeting","Retargeting","Suppression","Audience extension"]},
+      {id:"cookie_scope", text:"One advertiser or multiple?", answers:["One advertiser","Multiple advertisers","Marketplace"]},
+    ],
+    paths:[
+      {id:"cookie_native", name:"Nexxen native ID activation", desc:"Nexxen-native cookies or IDs activated directly in-platform.", bestWhen:["Nexxen-native IDs confirmed"]},
+      {id:"cookie_pixel", name:"Pixel rules / site retargeting", desc:"IDs built from site pixel data using rules-based segments.", bestWhen:["Nexxen pixel on site"]},
+      {id:"cookie_dmp", name:"DMP segment import", desc:"Third-party DMP segment imported into Nexxen.", bestWhen:["Third-party DMP confirmed"]},
+      {id:"cookie_dataops", name:"Escalate to DataOps", desc:"Cookie type or source is unclear.", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"identity", label:"RampID / UID2 / ID5", icon:"🔑",
+    description:"Privacy-safe universal identifiers: RampID, UID2, ID5, or other.",
+    questions:[
+      {id:"id_type", text:"Which identity standard does the buyer have?", answers:["RampID (LiveRamp)","UID2 (Trade Desk)","ID5","Panorama ID","Other"]},
+      {id:"id_source", text:"Who issued these IDs?", answers:["Buyer generated them","A data partner provided them"]},
+      {id:"id_delivery", text:"How will the IDs be delivered?", answers:["File-based SFTP","Partner Portal","API"]},
+      {id:"id_use_case", text:"What is the use case?", answers:["Targeting","Measurement","Identity resolution","Audience sync"]},
+    ],
+    paths:[
+      {id:"id_rampid", name:"LiveRamp RampID activation", desc:"RampIDs ingested via Nexxen's LiveRamp integration.", bestWhen:["RampID confirmed","LiveRamp connection available"]},
+      {id:"id_uid2", name:"UID2 activation", desc:"UID2 tokens ingested via Nexxen's UID2 integration.", bestWhen:["UID2 confirmed"]},
+      {id:"id_id5", name:"ID5 activation", desc:"ID5 IDs ingested via the ID5 integration.", bestWhen:["ID5 confirmed"]},
+      {id:"id_file", name:"File-based identity delivery", desc:"Identity file delivered via SFTP or Partner Portal.", bestWhen:["File delivery confirmed"]},
+      {id:"id_dataops", name:"Escalate to DataOps", desc:"Identity type or delivery path unclear.", bestWhen:["Unknown ID type","No delivery path"], escalate:true},
+    ],
+  },
+  {
+    id:"web", label:"Website / pixel data", icon:"🏷️",
+    description:"Site behavior, page visits, conversions, or pixel-based audiences.",
+    questions:[
+      {id:"web_pixel", text:"Does the buyer already have Nexxen pixels on their site?", answers:["Yes","No"]},
+      {id:"web_events", text:"What events does the buyer want to capture?", helper:"Page visits, product views, conversions, search, custom events.", answers:["Page visits","Conversions","Product views","Custom events","Multiple event types"]},
+      {id:"web_use_case", text:"What is the intended use?", answers:["Retargeting","Suppression","Measurement / reporting","Creative targeting","All of the above"]},
+      {id:"web_tags", text:"Does the site team control tags directly?", helper:"Determines whether FlexTag or direct pixel implementation is needed.", answers:["Yes — direct tag access","Via tag manager (GTM, Tealium, etc.)","No direct tag access"]},
+    ],
+    paths:[
+      {id:"web_pixel_rules", name:"Existing pixel — rules-based segments", desc:"Pixel is already live. Build audience segments using existing pixel rules.", bestWhen:["Pixel already on site"]},
+      {id:"web_beacon", name:"New beacon implementation", desc:"A new Nexxen pixel needs to be placed on the site.", bestWhen:["No existing pixel","Site team has tag access"]},
+      {id:"web_flextag", name:"FlexTag implementation", desc:"FlexTag used for flexible, multi-key event capture.", bestWhen:["Custom events needed","Tag manager available"]},
+      {id:"web_site_team", name:"Site team coordination required", desc:"Tag placement requires site team involvement.", bestWhen:["No direct tag access"]},
+      {id:"web_dataops", name:"Escalate to DataOps", desc:"Web implementation complexity requires DataOps review.", bestWhen:["Custom integration needed"], escalate:true},
+    ],
+  },
+  {
+    id:"marketplace", label:"Syndicated marketplace data", icon:"🏪",
+    description:"Data made broadly available through the marketplace.",
+    questions:[
+      {id:"mkt_access", text:"Who should have access to this data?", answers:["All buyers","Specific region or market","Specific buyer group","One advertiser only"]},
+      {id:"mkt_agreement", text:"Is there an existing partner agreement?", answers:["Yes","No — needs to be established"]},
+      {id:"mkt_pricing", text:"How is the data priced?", answers:["CPM","Flat fee","Percent of media","Unknown / TBD"]},
+      {id:"mkt_taxonomy", text:"Is the taxonomy already available?", answers:["Yes — taxonomy ready","Partial taxonomy","No taxonomy yet"]},
+      {id:"mkt_geo", text:"What geo should receive the data?", answers:["US only","EU only","Global","Specific markets"]},
+      {id:"mkt_partner", text:"New partner or existing partner update?", answers:["New partner","Existing partner update"]},
+    ],
+    paths:[
+      {id:"mkt_new", name:"AlwaysOn — new partner", desc:"New data partner onboarded to the AlwaysOn marketplace.", bestWhen:["New partner","Agreement in place","Taxonomy ready"]},
+      {id:"mkt_update", name:"AlwaysOn — partner update", desc:"Existing partner data updated in the marketplace.", bestWhen:["Existing partner","Update only"]},
+      {id:"mkt_region", name:"Region propagation", desc:"Data made available to a specific regional group.", bestWhen:["Region-specific rollout"]},
+      {id:"mkt_custom", name:"Custom / closed segment", desc:"Data available to a closed buyer group only.", bestWhen:["Restricted availability"]},
+      {id:"mkt_commercial", name:"Commercial review required", desc:"Pricing or agreement is undefined. Commercial team must confirm before ingestion.", bestWhen:["No agreement","Pricing unknown"], escalate:true},
+      {id:"mkt_taxonomy_review", name:"Taxonomy review required", desc:"Taxonomy is missing or incomplete. Must be resolved before marketplace availability.", bestWhen:["No taxonomy","Partial taxonomy"], escalate:true},
+      {id:"mkt_dataops", name:"Escalate to DataOps", desc:"Data scope or structure requires DataOps review.", bestWhen:["Complex rollout","Conflicting signals"], escalate:true},
+    ],
+  },
+  {
+    id:"custom", label:"Custom partner data", icon:"🤝",
+    description:"Custom integrations, non-standard data partnerships, or bespoke arrangements.",
+    questions:[
+      {id:"cust_type", text:"What type of custom data is this?", answers:["Custom segment from a specific partner","Bespoke data feed","Non-standard file format","Custom API integration"]},
+      {id:"cust_agreement", text:"Is there a commercial agreement in place?", answers:["Yes","In negotiation","No — not yet"]},
+      {id:"cust_delivery", text:"How will the data be delivered?", answers:["SFTP","API","Partner Portal","Nexxen-managed pipeline"]},
+      {id:"cust_scope", text:"Who will have access?", answers:["One advertiser","Multiple advertisers","Marketplace"]},
+    ],
+    paths:[
+      {id:"cust_direct", name:"Direct custom ingestion", desc:"Custom data ingested via a Nexxen-managed pipeline.", bestWhen:["Agreement confirmed","Delivery method known"]},
+      {id:"cust_commercial", name:"Commercial review required", desc:"No agreement in place. Commercial team must review before proceeding.", bestWhen:["No agreement","Agreement in negotiation"], escalate:true},
+      {id:"cust_dataops", name:"Escalate to DataOps", desc:"Custom integration complexity requires DataOps triage.", bestWhen:["Custom API","Non-standard format"], escalate:true},
+    ],
+  },
+  {
+    id:"unknown", label:"I am not sure", icon:"❓",
+    description:"Not sure what type of data or ID the buyer has.",
+    questions:[
+      {id:"unk_words", text:"What exact words did the buyer use?", helper:"Their phrasing often reveals the data type.", type:"text"},
+      {id:"unk_entity", text:"Is the buyer describing people, households, devices, browsers, or locations?", answers:["People / customers","Households","Devices (mobile)","Browsers","Locations / IPs","Website behavior"]},
+      {id:"unk_ids", text:"Did the buyer mention any of these?", type:"multi", answers:["Email","Phone","Customer list","IP address","Device ID","Cookie","RampID","UID2","ID5","Hashed email","None of these"]},
+      {id:"unk_use_case", text:"What does the buyer want to do with the data?", answers:["Target ads","Suppress existing customers","Measure campaign effectiveness","Build audience segments"]},
+      {id:"unk_provider", text:"Is there a data provider or onboarder already involved?", answers:["Yes — they mentioned one","No"]},
+    ],
+    paths:[
+      {id:"unk_sample", name:"Request sample file", desc:"Ask the buyer for a sample file or file layout. Column headers will identify the data type.", bestWhen:["Data type unclear after conversation"]},
+      {id:"unk_followup", name:"Buyer follow-up required", desc:"Not enough information to route. Use the generated follow-up block to get what you need.", bestWhen:["Most answers unknown"]},
+      {id:"unk_dataops", name:"DataOps triage", desc:"Escalate to DataOps for initial triage and classification.", bestWhen:["Complex or unusual data","Multiple unknowns"], escalate:true},
+    ],
+  },
+];
+
+// ─── DATA SOURCES ─────────────────────────────────────────────────────────────
+// Connect dropdowns and text fields to real data here.
+//
+// type: "api"    — fetches from a REST endpoint. Configure url, labelKey, valueKey.
+//                  Add searchParam to filter results as the user types (for text fields).
+//                  Add headers for auth tokens or API keys.
+// type: "static" — a hardcoded list of {label, value} pairs right here in the config.
+// type: "mock"   — uses a named list from DATA_MOCKS below (for prototyping / testing).
+//
+// To use a data source on a question, add:  dataSource: "sourceKeyName"
+// Works on questions with  type:"dropdown"  or  type:"text"
+
+const DATA_SOURCES = {
+
+  // ── Advertiser lookup ──────────────────────────────────────────────────────
+  // Replace with a real API when ready. Uses mock data until then.
+  advertisers: {
+    type: "mock",
+    mockKey: "advertisers",
+    labelKey: "name",
+    valueKey: "id",
+  },
+
+  // ── Market / seat lookup ───────────────────────────────────────────────────
+  markets: {
+    type: "mock",
+    mockKey: "markets",
+    labelKey: "label",
+    valueKey: "code",
+  },
+
+  // ── Data partner lookup ────────────────────────────────────────────────────
+  dataPartners: {
+    type: "mock",
+    mockKey: "dataPartners",
+    labelKey: "name",
+    valueKey: "id",
+  },
+
+  // ── Example: real REST API (uncomment and fill in) ─────────────────────────
+  // myRecords: {
+  //   type: "api",
+  //   url: "https://your-api.example.com/records",
+  //   method: "GET",
+  //   headers: { "Authorization": "Bearer YOUR_TOKEN_HERE" },
+  //   labelKey: "name",       // field in each result to display as the label
+  //   valueKey: "id",         // field to use as the stored value
+  //   searchParam: "q",       // appended as ?q=<input> for text-field searching
+  // },
+
+};
+
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+// Placeholder records used when type:"mock".
+// Replace with real API calls in DATA_SOURCES above when you're ready.
+
+const DATA_MOCKS = {
+  advertisers: [
+    {id:"adv_001", name:"Acme Corp"},
+    {id:"adv_002", name:"GlobalBrand Inc"},
+    {id:"adv_003", name:"Regional Auto Group"},
+    {id:"adv_004", name:"PharmaClient LLC"},
+    {id:"adv_005", name:"RetailChain Co"},
+    {id:"adv_006", name:"FinServ Partners"},
+    {id:"adv_007", name:"TechStartup Ltd"},
+  ],
+  markets: [
+    {code:"US",  label:"United States"},
+    {code:"UK",  label:"United Kingdom"},
+    {code:"CA",  label:"Canada"},
+    {code:"AU",  label:"Australia"},
+    {code:"DE",  label:"Germany"},
+    {code:"FR",  label:"France"},
+    {code:"JP",  label:"Japan"},
+  ],
+  dataPartners: [
+    {id:"dp_livecamp",  name:"LiveRamp"},
+    {id:"dp_neustar",   name:"Neustar"},
+    {id:"dp_acxiom",    name:"Acxiom"},
+    {id:"dp_experian",  name:"Experian"},
+    {id:"dp_oracle",    name:"Oracle Data Cloud"},
+    {id:"dp_id5",       name:"ID5"},
+    {id:"dp_uid2",      name:"UID2 / The Trade Desk"},
+  ],
+};
+
+// ─── DATA SOURCE FETCHER ──────────────────────────────────────────────────────
+// Central async function for resolving any data source.
+// Returns a promise of [{label, value}, ...].
+
+async function fetchDataSource(sourceKey, searchQuery = "") {
+  const src = DATA_SOURCES[sourceKey];
+  if (!src) { console.warn("No data source found for key:", sourceKey); return []; }
+
+  if (src.type === "mock") {
+    const raw = DATA_MOCKS[src.mockKey] || [];
+    const lk = src.labelKey || "label";
+    const vk = src.valueKey || "value";
+    const items = raw.map(r => ({ label: r[lk], value: r[vk] }));
+    if (!searchQuery) return items;
+    const q = searchQuery.toLowerCase();
+    return items.filter(i => i.label.toLowerCase().includes(q));
+  }
+
+  if (src.type === "static") {
+    const items = (src.options || []).map(o =>
+      typeof o === "string" ? { label: o, value: o } : o
+    );
+    if (!searchQuery) return items;
+    const q = searchQuery.toLowerCase();
+    return items.filter(i => i.label.toLowerCase().includes(q));
+  }
+
+  if (src.type === "api") {
+    try {
+      let url = src.url;
+      if (searchQuery && src.searchParam) {
+        const sep = url.includes("?") ? "&" : "?";
+        url += `${sep}${src.searchParam}=${encodeURIComponent(searchQuery)}`;
+      }
+      const resp = await fetch(url, {
+        method: src.method || "GET",
+        headers: src.headers || {},
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const rows = Array.isArray(data) ? data : (data.results || data.data || data.items || []);
+      const lk = src.labelKey || "label";
+      const vk = src.valueKey || "value";
+      return rows.map(r => ({ label: r[lk], value: r[vk] }));
+    } catch (e) {
+      console.warn("Data source fetch failed:", e);
+      return [];
+    }
+  }
+
+  return [];
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+
+let state = { module: null, qIndex: 0, answers: {}, showResult: false };
+
+// ─── LOGIC ────────────────────────────────────────────────────────────────────
+
+function getConfidence(answers, module) {
+  const qs = module.questions;
+  if (qs.length === 0) return "Low";
+  const unknownCount = qs.filter(q => {
+    const v = answers[q.id];
+    if (!v) return true;
+    if (v === "__unknown__") return true;
+    if (Array.isArray(v) && (v.length === 0 || (v.length === 1 && v[0] === "__unknown__"))) return true;
+    return false;
+  }).length;
+  const ratio = (qs.length - unknownCount) / qs.length;
+  if (ratio >= 0.75) return "High";
+  if (ratio >= 0.45) return "Medium";
+  return "Low";
+}
+
+function getTopPath(answers, module) {
+  if (!module || !module.paths.length) return null;
+  const vals = Object.values(answers).flat().join(" ").toLowerCase();
+
+  // Privacy/legal escalation first
+  if (vals.includes("consent") || vals.includes("legal review")) {
+    return module.paths.find(p => p.id.includes("privacy") || p.id.includes("legal")) || module.paths[module.paths.length-1];
+  }
+  // Unknown-heavy → escalate
+  const unknCount = Object.values(answers).filter(v => v === "__unknown__" || (Array.isArray(v) && v.includes("__unknown__"))).length;
+  const totalAnswered = Object.keys(answers).length;
+  if (unknCount >= 2 || (totalAnswered > 0 && unknCount / totalAnswered > 0.4)) {
+    return module.paths.find(p => p.id.includes("dataops") || p.id.includes("followup") || p.id.includes("triage")) || module.paths[module.paths.length-1];
+  }
+
+  if (module.id === "pii") {
+    if (vals.includes("suppression only") || (vals.includes("suppression") && !vals.includes("targeting") && !vals.includes("measurement"))) return module.paths.find(p=>p.id==="pii_suppression");
+    if (vals.includes("measurement only") || (vals.includes("measurement") && !vals.includes("targeting"))) return module.paths.find(p=>p.id==="pii_measurement");
+    if (vals.includes("livecamp") || vals.includes("liveramp") || vals.includes("yes — livecamp") || vals.includes("yes — liveramp")) return module.paths.find(p=>p.id==="pii_direct_onboarder");
+    if (vals.includes("no onboarder")) return module.paths.find(p=>p.id==="pii_nexxen_mapping");
+    return module.paths[0];
+  }
+  if (module.id === "ip") {
+    if (vals.includes("ip plus other")) return module.paths.find(p=>p.id==="ip_metadata");
+    if (vals.includes("ip plus segment")) return module.paths.find(p=>p.id==="ip_platform_multi");
+    if (vals.includes("sftp")) return module.paths.find(p=>p.id==="ip_sftp");
+    if (vals.includes("partner portal")) return module.paths.find(p=>p.id==="ip_partner_portal");
+    if (vals.includes("ip only")) return module.paths.find(p=>p.id==="ip_platform_single");
+    return module.paths[0];
+  }
+  if (module.id === "web") {
+    if (vals.includes("yes")) return module.paths.find(p=>p.id==="web_pixel_rules");
+    if (vals.includes("no direct")) return module.paths.find(p=>p.id==="web_site_team");
+    if (vals.includes("custom events") || vals.includes("flextag")) return module.paths.find(p=>p.id==="web_flextag");
+    return module.paths[1];
+  }
+  if (module.id === "marketplace") {
+    if (vals.includes("new partner")) return module.paths.find(p=>p.id==="mkt_new");
+    if (vals.includes("existing partner")) return module.paths.find(p=>p.id==="mkt_update");
+    if (vals.includes("no — needs") || vals.includes("unknown / tbd")) return module.paths.find(p=>p.id==="mkt_commercial");
+    if (vals.includes("no taxonomy")) return module.paths.find(p=>p.id==="mkt_taxonomy_review");
+    return module.paths[0];
+  }
+  if (module.id === "unknown") {
+    const filled = Object.values(answers).filter(v=>v&&v!=="__unknown__"&&!(Array.isArray(v)&&v.every(x=>x==="__unknown__"))).length;
+    if (filled < 2) return module.paths.find(p=>p.id==="unk_followup");
+    return module.paths.find(p=>p.id==="unk_sample");
+  }
+  return module.paths[0];
+}
+
+function getUnknowns(answers, module) {
+  return module.questions.filter(q => {
+    const v = answers[q.id];
+    if (v === undefined || v === null) return true;
+    if (v === "__unknown__") return true;
+    if (Array.isArray(v) && (v.length === 0 || v.every(x => x === "__unknown__"))) return true;
+    if (typeof v === "string" && v.trim() === "") return true;
+    if (typeof v === "object" && !Array.isArray(v)) {
+      // {label, value} from dropdown or autocomplete
+      return !v.value || v.value === "__unknown__" || v.value === "__placeholder__";
+    }
+    return false;
+  }).map(q => q.text);
+}
+
+// ─── COPY TEXT BUILDERS ───────────────────────────────────────────────────────
+
+function slackText(module, path, conf, unknowns) {
+  return `Data onboarding path request
+
+Data type: ${module.label}
+Confidence: ${conf}
+Recommended path: ${path ? path.name : "[TBD]"}
+
+Missing info:
+${unknowns.length ? unknowns.map(u=>`• ${u}`).join("\n") : "• None"}
+
+Needed from DataOps:
+${path && path.escalate ? "• Review and classify this request before routing further." : "• Confirm delivery method and segment structure."}`;
+}
+
+function buyerText(unknowns) {
+  if (!unknowns.length) return "All required information is confirmed — no follow-up needed.";
+  return `To route this correctly, can you confirm the following?\n\n${unknowns.map((u,i)=>`${i+1}. ${u}`).join("\n")}`;
+}
+
+function jiraText(module, path, conf, unknowns) {
+  return `Request type: Data onboarding
+
+Data type: ${module.label}
+Confidence: ${conf}
+Recommended path: ${path ? path.name : "[TBD]"}
+Summary: ${path ? path.desc : "[TBD]"}
+
+Unknowns:
+${unknowns.length ? unknowns.map(u=>`• ${u}`).join("\n") : "• None"}
+
+Links:
+• Partner Portal: [PLACEHOLDER]
+• DataOps JIRA: [PLACEHOLDER]`;
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+}
+
+function copyText(text, label) {
+  navigator.clipboard.writeText(text).then(() => toast("Copied: " + label)).catch(() => {
+    // fallback
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+    toast("Copied: " + label);
+  });
+}
+
+// ─── RENDER HELPERS ───────────────────────────────────────────────────────────
+
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "className") el.className = v;
+    else if (k.startsWith("on")) el[k.toLowerCase()] = v;
+    else el.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null) continue;
+    el.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  }
+  return el;
+}
+
+// ─── MODULE KEYWORDS ──────────────────────────────────────────────────────────
+// Each entry is a list of terms that map to that module.
+// Add synonyms here as you learn how buyers describe their data.
+
+const MODULE_KEYWORDS = {
+  pii:         ["email","emails","crm","pii","hashed","hashed email","customer","customers","phone","name","address","customer list","contacts","first party","first-party","raw pii"],
+  ip:          ["ip","ips","ip address","ip addresses","household ip","internet protocol","household","ip file","ips and segments"],
+  maid:        ["mobile","maid","maids","idfa","gaid","device id","device ids","app data","ios","android","mobile id","mobile advertising"],
+  cookie:      ["cookie","cookies","nexxen id","browser","browser id","pixel id","web id"],
+  identity:    ["rampid","ramp id","uid2","id5","identity","universal id","panorama","panorama id","liveramp","trade desk","privacy id","resolved id"],
+  web:         ["website","pixel","site","beacon","flextag","flex tag","tag","page visit","conversion","web data","site data","pixel data","site behavior","web behavior"],
+  marketplace: ["marketplace","syndicated","always on","alwayson","data provider","third party","third-party","audience data","taxonomy","segment data"],
+  custom:      ["custom","partner","bespoke","integration","custom feed","custom data","custom segment","non-standard"],
+  unknown:     ["not sure","don't know","unsure","unknown","no idea","unclear"],
+};
+
+// Simple negation: returns true if a keyword appears right after a negating word
+function isNegated(text, keyword) {
+  const negators = ["not ","no ","without ","never ","don't ","cannot ","don't ","aren't ","we are not ","not sending ","not using ","not "];
+  for (const neg of negators) {
+    const pattern = neg + keyword;
+    if (text.includes(pattern)) return true;
+  }
+  return false;
+}
+
+function scoreModule(mod, query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return 0;
+  const keywords = MODULE_KEYWORDS[mod.id] || [];
+  const isLong = q.length > 200;
+  let score = 0;
+
+  if (isLong) {
+    // For long text: count keyword occurrences, penalize negated ones
+    for (const kw of keywords) {
+      if (isNegated(q, kw)) { score -= 2; continue; }
+      // Count occurrences
+      let count = 0;
+      let idx = 0;
+      while ((idx = q.indexOf(kw, idx)) !== -1) { count++; idx += kw.length; }
+      if (count > 0) score += Math.min(count * 3, 12); // cap per-keyword contribution
+    }
+    if (isNegated(q, mod.label.toLowerCase())) score -= 4;
+    else if (q.includes(mod.label.toLowerCase())) score += 4;
+  } else {
+    // Short text: original exact/partial matching
+    for (const kw of keywords) {
+      if (kw === q) { score += 10; continue; }
+      if (kw.startsWith(q) || q.startsWith(kw)) { score += 6; continue; }
+      if (kw.includes(q) || q.includes(kw)) { score += 3; continue; }
+    }
+    if (mod.label.toLowerCase().includes(q)) score += 4;
+    if (mod.description.toLowerCase().includes(q)) score += 2;
+  }
+  return score;
+}
+
+// ─── THREAD ANALYSIS ──────────────────────────────────────────────────────────
+
+// For each answer option, build a list of signals to look for in thread text.
+// Falls back to just using the answer text itself when no special mapping exists.
+const ANSWER_SIGNALS = {
+  // IP questions
+  "IP only":                  ["ip only","ip-only","ip address","ip addresses","ips only","just ip","only ip"],
+  "IP plus segment IDs":      ["ip plus segment","ip with segment","segment id","segment_id","tab.*segment","ip.*mapped"],
+  "IP plus other metadata":   ["ip plus","ip with metadata","non-standard"],
+  "Yes — SFTP":               ["sftp","ftp","file transfer","deliver.*sftp","sftp.*deliver"],
+  "Yes — Partner Portal":     ["partner portal","partnerportal"],
+  "One segment":              ["one segment","single segment","1 segment"],
+  "Multiple segments":        ["multiple segment","multi.*segment","segment.*multiple","three segment","several segment","auto_001","auto_014","suv.*ev","in market.*suv"],
+  "One advertiser":           ["one advertiser","single advertiser","single-advertiser","one client","northstar only","locked to","advertiser only","advertiser id","custom.*advertiser","not.*all advertiser","cannot approve.*all","for their own"],
+  "Marketplace / broadly available": ["marketplace","broadly available","alwayson","always on","all advertiser","resale","multi-advertiser"],
+  "One-time / static":        ["one.time","one-time","static file","single upload","one time"],
+  "Recurring":                ["recurring","weekly","monthly","daily","regular.*deliver","deliver.*week","deliver.*month","refresh","ongoing","cadence"],
+  // PII questions
+  "Emails / hashed emails":   ["email","hashed email","hem","sha256","md5"],
+  "Phone numbers":            ["phone","mobile number","telephone"],
+  "Name + address (postal)":  ["name.*address","postal","mailing","crm.*address"],
+  "Mix of PII types":         ["mix.*pii","multiple.*pii","combination"],
+  // MAID
+  "IDFA (iOS)":               ["idfa","ios","apple"],
+  "GAID (Android)":           ["gaid","android","google.*id"],
+  "Mixed IDFA + GAID":        ["mixed","idfa.*gaid","gaid.*idfa"],
+  // Cookie
+  "Nexxen cookies (Nexxen-native)": ["nexxen cookie","nexxen.*native","nexxen id"],
+  "Third-party cookies":      ["third.party cookie","3p cookie","3rd party cookie"],
+  // Identity
+  "RampID (LiveRamp)":        ["rampid","liveramp","ramp id"],
+  "UID2 (Trade Desk)":        ["uid2","trade desk","uid 2"],
+  "ID5":                      ["id5"],
+  // Delivery
+  "API":                      ["\\bapi\\b","api endpoint","api delivery","programmatic.*ingest"],
+  "File-based SFTP":          ["sftp","file.*sftp","sftp.*file"],
+  "Partner Portal":           ["partner portal"],
+  // Syndicated
+  "Syndicated (pre-built segments)": ["syndicated","pre.built","alwayson","always on","marketplace.*segment"],
+  "Custom (built for one buyer)":    ["custom.*buyer","built for","one buyer","custom.*single","bespoke"],
+  // Scope
+  "All advertisers in market":       ["all advertiser","market.wide","market level","all.*market"],
+};
+
+function signalScore(answerLabel, text) {
+  const t = text.toLowerCase();
+  const signals = ANSWER_SIGNALS[answerLabel] || [answerLabel.toLowerCase()];
+  for (const sig of signals) {
+    try {
+      if (new RegExp(sig).test(t)) return 1;
+    } catch(_) {
+      if (t.includes(sig)) return 1;
+    }
+  }
+  return 0;
+}
+
+function extractAnswers(module, text) {
+  const answers = {};
+  for (const q of module.questions) {
+    if (!q.answers || !q.answers.length) continue;
+    let best = null, bestScore = 0;
+    for (const a of q.answers) {
+      const s = signalScore(a, text);
+      if (s > bestScore) { bestScore = s; best = a; }
+    }
+    answers[q.id] = best || "__unknown__";
+  }
+  return answers;
+}
+
+function analyzeThread(text) {
+  // Find best module
+  const scored = MODULES
+    .filter(m => m.id !== "unknown")
+    .map(m => ({ m, s: scoreModule(m, text) }))
+    .sort((a,b) => b.s - a.s);
+  if (!scored.length || scored[0].s === 0) return null;
+  const module = scored[0].m;
+  const answers = extractAnswers(module, text);
+  return { module, answers };
+}
+
+function renderAnalysisResult(module, answers, resultsEl) {
+  const path = getTopPath(answers, module);
+  const conf = getConfidence(answers, module);
+  const unknowns = getUnknowns(answers, module);
+
+  const card = document.createElement("div");
+  card.className = "analysis-card";
+
+  // Header
+  const hdr = document.createElement("h3");
+  hdr.textContent = "Best match";
+  card.appendChild(hdr);
+
+  const modName = document.createElement("div");
+  modName.className = "analysis-module";
+  modName.textContent = module.icon + " " + module.label;
+  card.appendChild(modName);
+
+  // Confidence badge
+  const badge = document.createElement("div");
+  badge.className = "analysis-conf " + conf;
+  badge.textContent = conf + " confidence";
+  card.appendChild(badge);
+
+  // Recommended path
+  if (path) {
+    const pSec = document.createElement("div");
+    pSec.className = "analysis-section";
+    pSec.textContent = "Recommended path";
+    card.appendChild(pSec);
+
+    const pCard = document.createElement("div");
+    pCard.className = "analysis-path";
+    pCard.innerHTML = `<div class="analysis-path-name">${path.name}</div><div class="analysis-path-desc">${path.desc}</div>`;
+    card.appendChild(pCard);
+  }
+
+  // Extracted answers
+  const aSec = document.createElement("div");
+  aSec.className = "analysis-section";
+  aSec.textContent = "Signals extracted from thread";
+  card.appendChild(aSec);
+
+  const aList = document.createElement("div");
+  aList.className = "analysis-answers";
+  for (const q of module.questions) {
+    const val = answers[q.id];
+    const row = document.createElement("div");
+    row.className = "analysis-answer";
+    const known = val && val !== "__unknown__";
+    row.innerHTML = `<span class="aq-label">${q.text}</span>
+      <span class="aq-val${known ? "" : " unk"}">${known ? val : "Unknown"}</span>`;
+    aList.appendChild(row);
+  }
+  card.appendChild(aList);
+
+  // Action buttons
+  const actions = document.createElement("div");
+  actions.className = "analysis-actions";
+
+  const viewBtn = document.createElement("button");
+  viewBtn.className = "analysis-btn primary";
+  viewBtn.textContent = "View full result →";
+  viewBtn.onclick = () => {
+    startModule(module);
+    Object.assign(state.answers, answers);
+    state.showResult = true;
+    renderResult();
+  };
+  actions.appendChild(viewBtn);
+
+  const refineBtn = document.createElement("button");
+  refineBtn.className = "analysis-btn ghost";
+  refineBtn.textContent = "Refine in chat";
+  refineBtn.onclick = () => {
+    openChatPanel();
+    // Prime the chat with this module and extracted answers
+    chatState.phase = "question";
+    chatState.module = module;
+    chatState.answers = { ...answers };
+    // Find first unknown question
+    const firstUnknownIdx = module.questions.findIndex(q => !answers[q.id] || answers[q.id] === "__unknown__");
+    chatState.qIndex = firstUnknownIdx >= 0 ? firstUnknownIdx : module.questions.length - 1;
+    // Add a context message
+    chatState.messages = [];
+    addMessage("bot", `I picked up your thread — looks like ${module.label}. I've pre-filled what I could extract. Let me ask about the remaining unknowns.`);
+    setTimeout(chatAskCurrentQuestion, 500);
+  };
+  actions.appendChild(refineBtn);
+
+  card.appendChild(actions);
+  resultsEl.innerHTML = "";
+  resultsEl.appendChild(card);
+}
+
+// ─── HOME ─────────────────────────────────────────────────────────────────────
+
+function renderHome() {
+  const searchEl  = document.getElementById("home-search");
+  const resultsEl = document.getElementById("home-results");
+  const idkBtn    = document.getElementById("btn-idk");
+
+  // Auto-resize textarea
+  function autoResize() {
+    searchEl.style.height = "auto";
+    searchEl.style.height = Math.min(searchEl.scrollHeight, 260) + "px";
+  }
+
+  function renderCards(mods, emptyMsg) {
+    resultsEl.innerHTML = "";
+    if (!mods.length) {
+      resultsEl.innerHTML = `<div class="home-no-match">
+        <p>${emptyMsg || "No matches found."}</p>
+        <button class="home-idk-btn" onclick="document.getElementById('btn-idk').click()">Show all options →</button>
+      </div>`;
+      return;
+    }
+    for (const mod of mods) {
+      const card = h("button",{className:"scard"+(mod.id==="unknown"?" unk":""), onClick:()=>startModule(mod)},
+        h("div",{className:"scard-icon"},mod.icon),
+        h("h3",{},mod.label),
+        h("p",{},mod.description)
+      );
+      resultsEl.appendChild(card);
+    }
+  }
+
+  let analysisTimer = null;
+
+  function onInput() {
+    autoResize();
+    const q = searchEl.value.trim();
+    if (!q) {
+      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+      return;
+    }
+
+    // Long text (pasted thread) — debounce and analyze
+    if (q.length > 200) {
+      resultsEl.innerHTML = `<div class="analysis-spinner">Analyzing thread…</div>`;
+      clearTimeout(analysisTimer);
+      analysisTimer = setTimeout(() => {
+        const result = analyzeThread(q);
+        if (!result) {
+          resultsEl.innerHTML = `<div class="home-no-match"><p>Couldn't identify a clear data type from that text. Try shortening it or describing the data type directly.</p></div>`;
+          return;
+        }
+        renderAnalysisResult(result.module, result.answers, resultsEl);
+      }, 400);
+      return;
+    }
+
+    // Short text — show matching module cards as before
+    clearTimeout(analysisTimer);
+    const scored = MODULES
+      .map(m => ({ mod:m, score:scoreModule(m, q) }))
+      .filter(x => x.score > 0)
+      .sort((a,b) => b.score - a.score)
+      .map(x => x.mod);
+
+    const uncertainTerms = ["not sure","don't know","unsure","unknown","unclear","no idea"];
+    const lq = q.toLowerCase();
+    const addUnknown = uncertainTerms.some(t => t.includes(lq) || lq.includes(t));
+    const unknownMod = MODULES.find(m => m.id === "unknown");
+    if (addUnknown && unknownMod && !scored.includes(unknownMod)) scored.push(unknownMod);
+
+    renderCards(scored, `No exact match for "<strong>${q}</strong>". Try different terms, or:`);
+  }
+
+  searchEl.addEventListener("input", onInput);
+
+  idkBtn.addEventListener("click", () => {
+    searchEl.value = "";
+    autoResize();
+    renderCards(MODULES);
+    idkBtn.textContent = "Hide options";
+    idkBtn.onclick = () => {
+      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+      searchEl.value = "";
+      autoResize();
+      idkBtn.textContent = "Show all options →";
+      idkBtn.onclick = null;
+      renderHome._idkReset && renderHome._idkReset();
+    };
+  });
+  renderHome._idkReset = () => renderHome();
+
+  // Initial state
+  resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+  setTimeout(() => searchEl.focus(), 50);
+}
+
+// ─── MODULE START ─────────────────────────────────────────────────────────────
+
+function startModule(mod) {
+  state = { module: mod, qIndex: 0, answers: {}, showResult: false };
+  document.getElementById("home").classList.remove("active");
+  document.getElementById("workspace-view").classList.add("active");
+  document.getElementById("btn-home").style.display = "block";
+  document.getElementById("mod-tag").textContent = mod.icon + " " + mod.label;
+  renderQuestion();
+}
+
+function showHome() {
+  state = { module: null, qIndex: 0, answers: {}, showResult: false };
+  document.getElementById("workspace-view").classList.remove("active");
+  document.getElementById("home").classList.add("active");
+  document.getElementById("btn-home").style.display = "none";
+}
+
+// ─── QUESTION ─────────────────────────────────────────────────────────────────
+
+function renderQuestion() {
+  const { module, qIndex, answers } = state;
+  const qs = module.questions;
+  const q = qs[qIndex];
+  const total = qs.length;
+  const pct = Math.round((qIndex / total) * 100);
+  const isLast = qIndex === total - 1;
+
+  // Nav buttons — refreshNav() re-evaluates enabled state after any answer change
+  const nextBtn  = h("button", {className:"btn-next",  onClick:()=>{ state.qIndex++; renderQuestion(); renderSidebar(); }}, "Next →");
+  const finishBtn= h("button", {className:"btn-finish",onClick:()=>{ state.showResult=true; renderResult(); }}, "Show recommendation →");
+  const skipBtn  = h("button", {className:"btn-skip",  onClick:()=>{ state.qIndex++; renderQuestion(); renderSidebar(); }}, "Skip");
+
+  function refreshNav() {
+    const has = hasAnswerForQ(q, state.answers[q.id]);
+    if (isLast) {
+      nextBtn.style.display = "none"; skipBtn.style.display = "none";
+    } else {
+      finishBtn.style.display = "none";
+      nextBtn.disabled = !has;
+      skipBtn.style.display = has ? "none" : "";
+    }
+  }
+  refreshNav();
+
+  const navEls = [];
+  if (qIndex > 0) navEls.push(h("button", {className:"btn-back", onClick:()=>{ state.qIndex--; renderQuestion(); renderSidebar(); }}, "← Back"));
+  if (isLast) navEls.push(finishBtn); else navEls.push(nextBtn, skipBtn);
+
+  // Input container — filled by renderInputForQuestion (may be async)
+  const inputContainer = document.createElement("div");
+
+  // Optional badge showing the input type
+  const badge = getInputTypeBadge(q);
+  const headerChildren = [h("div",{className:"qtext"},q.text)];
+  if (badge) headerChildren.push(badge);
+
+  const slot = document.getElementById("question-slot");
+  slot.innerHTML = "";
+  slot.appendChild(
+    h("div", {},
+      h("div",{className:"prog-wrap"},
+        h("div",{className:"prog-meta"},
+          h("span",{},`Question ${qIndex+1} of ${total}`),
+          h("span",{},`${pct}% complete`)
+        ),
+        h("div",{className:"prog-bar"},
+          h("div",{className:"prog-fill",style:`width:${pct}%`})
+        )
+      ),
+      h("div",{className:"qcard"},
+        h("div",{className:"q-header"},...headerChildren),
+        q.helper ? h("div",{className:"qhelper"},q.helper) : null,
+        inputContainer
+      ),
+      h("div",{className:"qnav"},...navEls)
+    )
+  );
+
+  renderInputForQuestion(q, inputContainer, answers[q.id], (val) => {
+    state.answers[q.id] = val;
+    refreshNav();
+    renderSidebar();
+  });
+
+  renderSidebar();
+}
+
+// Returns true if the question has a usable answer
+function hasAnswerForQ(q, val) {
+  if (val === undefined || val === null) return false;
+  if (val === "__unknown__") return true;
+  const type = q.type || "chips";
+  if (type === "multi")    return Array.isArray(val) && val.length > 0;
+  if (type === "text")     return typeof val === "string" ? val.trim().length > 0 : !!(val && val.label);
+  if (type === "dropdown") {
+    const v = typeof val === "object" ? val.value : val;
+    return !!v && v !== "__placeholder__";
+  }
+  return !!val;
+}
+
+// Small badge indicating the input type (shown in top-right of question card)
+function getInputTypeBadge(q) {
+  const type = q.type || "chips";
+  const map = {
+    text:     { label: q.dataSource ? "Search"       : "Free text", cls:"itype-text"     },
+    dropdown: { label: q.dataSource ? "Live dropdown" : "Dropdown",  cls:"itype-dropdown" },
+    multi:    { label: "Multi-select",                                cls:"itype-multi"    },
+  };
+  const info = map[type];
+  if (!info) return null;
+  return h("span",{className:`input-type-badge ${info.cls}`}, info.label);
+}
+
+// Dispatch to the right renderer based on question type
+function renderInputForQuestion(q, container, currentVal, onChange) {
+  const type = q.type || "chips";
+  if      (type === "chips")    renderChips(q, container, currentVal, onChange, false);
+  else if (type === "multi")    renderChips(q, container, currentVal, onChange, true);
+  else if (type === "text")     renderFreeText(q, container, currentVal, onChange);
+  else if (type === "dropdown") renderDropdown(q, container, currentVal, onChange);
+  else                          renderChips(q, container, currentVal, onChange, false);
+}
+
+// ── Chips (single or multi) ────────────────────────────────────────────────
+
+function renderChips(q, container, currentVal, onChange, isMulti) {
+  function rebuild(val) {
+    container.innerHTML = "";
+    const wrap = h("div",{className:"chips"});
+    for (const a of (q.answers || [])) {
+      const sel = isMulti ? Array.isArray(val) && val.includes(a) : val === a;
+      const chip = h("button",{className:"chip"+(sel?" sel":""),onClick:()=>{
+        let next;
+        if (isMulti) {
+          const cur = Array.isArray(val) ? [...val] : [];
+          const i = cur.indexOf(a);
+          next = i === -1 ? [...cur, a] : cur.filter((_,j)=>j!==i);
+        } else { next = a; }
+        onChange(next); rebuild(next);
+      }}, a);
+      wrap.appendChild(chip);
+    }
+    // I don't know chip
+    const unknSel = isMulti ? Array.isArray(val) && val.includes("__unknown__") : val === "__unknown__";
+    const unkChip = h("button",{className:"chip unk-chip"+(unknSel?" sel":""),onClick:()=>{
+      let next;
+      if (isMulti) {
+        const cur = Array.isArray(val) ? [...val] : [];
+        const i = cur.indexOf("__unknown__");
+        next = i === -1 ? [...cur,"__unknown__"] : cur.filter((_,j)=>j!==i);
+      } else { next = "__unknown__"; }
+      onChange(next); rebuild(next);
+    }}, "I don't know");
+    wrap.appendChild(unkChip);
+    container.appendChild(wrap);
+  }
+  rebuild(currentVal);
+}
+
+// ── Free text (plain or with autocomplete from a data source) ──────────────
+
+function renderFreeText(q, container, currentVal, onChange) {
+  container.innerHTML = "";
+  if (q.dataSource) {
+    renderAutocompleteText(q, container, currentVal, onChange);
+  } else {
+    const inp = h("input",{className:"free-input",type:"text",placeholder:q.placeholder||"Type your answer…"});
+    inp.value = typeof currentVal === "object" && currentVal ? currentVal.label : (currentVal||"");
+    inp.addEventListener("input", ()=>onChange(inp.value));
+    const wrap = h("div",{className:"text-wrap"},inp);
+    container.appendChild(wrap);
+    setTimeout(()=>inp.focus(), 50);
+  }
+}
+
+function renderAutocompleteText(q, container, currentVal, onChange) {
+  const wrap      = h("div",{className:"autocomplete-wrap"});
+  const inp       = h("input",{className:"free-input",type:"text",autocomplete:"off",placeholder:q.placeholder||"Type to search…"});
+  const loadingEl = h("div",{className:"suggest-loading"},h("span",{className:"loading-spinner"})," Searching…");
+  const suggList  = h("div",{className:"suggest-list"});
+
+  inp.value = typeof currentVal === "object" && currentVal ? currentVal.label : (currentVal||"");
+  loadingEl.style.display = "none";
+  suggList.style.display  = "none";
+
+  let debounce, activeIdx = -1;
+
+  function hideSugg() { suggList.style.display="none"; suggList.innerHTML=""; activeIdx=-1; }
+
+  function showSugg(items) {
+    suggList.innerHTML = "";
+    if (!items.length) { hideSugg(); return; }
+    for (const item of items) {
+      const el = h("div",{className:"suggest-item"},item.label);
+      el.addEventListener("mousedown", e => {
+        e.preventDefault();
+        inp.value = item.label;
+        onChange({label:item.label, value:item.value});
+        hideSugg();
+      });
+      suggList.appendChild(el);
+    }
+    suggList.style.display = "block";
+  }
+
+  inp.addEventListener("input", () => {
+    onChange(inp.value);
+    clearTimeout(debounce);
+    if (!inp.value.trim()) { hideSugg(); return; }
+    debounce = setTimeout(async () => {
+      loadingEl.style.display = "flex";
+      const items = await fetchDataSource(q.dataSource, inp.value);
+      loadingEl.style.display = "none";
+      showSugg(items);
+    }, 250);
+  });
+
+  inp.addEventListener("keydown", e => {
+    const items = suggList.querySelectorAll(".suggest-item");
+    if      (e.key==="ArrowDown")  activeIdx = Math.min(activeIdx+1, items.length-1);
+    else if (e.key==="ArrowUp")    activeIdx = Math.max(activeIdx-1, 0);
+    else if (e.key==="Enter" && activeIdx>=0) { items[activeIdx].dispatchEvent(new MouseEvent("mousedown")); return; }
+    else if (e.key==="Escape") { hideSugg(); return; }
+    items.forEach((el,i) => el.classList.toggle("active", i===activeIdx));
+  });
+
+  inp.addEventListener("blur", () => setTimeout(hideSugg, 150));
+
+  wrap.appendChild(inp);
+  wrap.appendChild(loadingEl);
+  wrap.appendChild(suggList);
+  container.appendChild(wrap);
+  setTimeout(()=>inp.focus(), 50);
+}
+
+// ── Dropdown (static options or dynamic from a data source) ────────────────
+
+function renderDropdown(q, container, currentVal, onChange) {
+  container.innerHTML = "";
+  if (q.dataSource) {
+    const loader = h("div",{className:"loading-wrap"},h("span",{className:"loading-spinner"})," Loading options…");
+    container.appendChild(loader);
+    fetchDataSource(q.dataSource).then(items => {
+      container.innerHTML = "";
+      buildSelect(q, container, items, currentVal, onChange);
+    });
+  } else {
+    const items = (q.answers||[]).map(a => typeof a==="string" ? {label:a,value:a} : a);
+    buildSelect(q, container, items, currentVal, onChange);
+  }
+}
+
+function buildSelect(q, container, items, currentVal, onChange) {
+  const sel = h("select",{className:"q-select"});
+  const ph  = h("option",{value:"__placeholder__"}, q.placeholder||"— select one —");
+  ph.disabled = true;
+  sel.appendChild(ph);
+
+  for (const item of items) {
+    const opt = h("option",{value:item.value}, item.label);
+    sel.appendChild(opt);
+  }
+  sel.appendChild(h("option",{value:"__unknown__"}, "I don't know"));
+
+  const cur = typeof currentVal==="object" && currentVal ? currentVal.value : currentVal;
+  sel.value = cur || "__placeholder__";
+
+  sel.addEventListener("change", () => {
+    const v = sel.value;
+    if (v==="__placeholder__") return;
+    const found = items.find(i=>i.value===v);
+    onChange(found ? {label:found.label, value:found.value} : v);
+  });
+
+  container.appendChild(h("div",{className:"dropdown-wrap"},sel,h("span",{className:"select-arrow"},"▾")));
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+
+function renderSidebar() {
+  const { module, answers } = state;
+  if (!module) return;
+
+  // Path preview
+  const conf = getConfidence(answers, module);
+  const path = getTopPath(answers, module);
+  const previewBody = document.getElementById("path-preview-body");
+  previewBody.innerHTML = "";
+
+  if (Object.keys(answers).length === 0) {
+    previewBody.textContent = "Answer questions to see likely paths.";
+    previewBody.style.cssText = "font-size:12px;color:var(--g500);";
+  } else {
+    previewBody.style.cssText = "";
+    const isLow = conf === "Low";
+    const card = h("div",{className:"path-prev"+(isLow?" low":"")},
+      h("div",{className:"path-prev-name"+(isLow?" low":"")}, path ? path.name : "Needs more info"),
+      h("div",{style:"display:flex;align-items:center;gap:6px;margin-top:6px;"},
+        h("span",{className:`conf-badge conf-${conf}`},conf+" confidence")
+      ),
+      path ? h("div",{className:"path-prev-desc"}, path.desc) : null
+    );
+    previewBody.appendChild(card);
+    if (isLow) {
+      const note = document.createElement("div");
+      note.style.cssText = "font-size:11px;color:var(--warn);margin-top:6px;";
+      note.textContent = "More answers needed for a clean recommendation.";
+      previewBody.appendChild(note);
+    }
+  }
+
+  // Tray
+  const trayBody = document.getElementById("tray-body");
+  trayBody.innerHTML = "";
+  module.questions.forEach((q, i) => {
+    const val = answers[q.id];
+    let display, isKnown;
+    if (!val || (Array.isArray(val) && val.length === 0)) {
+      display = "Not yet answered"; isKnown = false;
+    } else if (val === "__unknown__" || (Array.isArray(val) && val.every(x=>x==="__unknown__"))) {
+      display = "I don't know"; isKnown = false;
+    } else {
+      display = Array.isArray(val) ? val.filter(x=>x!=="__unknown__").join(", ") : val;
+      isKnown = true;
+    }
+    const shortQ = q.text.length > 45 ? q.text.slice(0,45)+"…" : q.text;
+    const shortV = display.length > 30 ? display.slice(0,30)+"…" : display;
+
+    const item = h("div",{className:"tray-item"},
+      h("div",{className:"tray-q"},`${i+1}. ${shortQ}`),
+      h("div",{className:"tray-row"},
+        h("span",{className:"tray-val "+(isKnown?"known":"unkn")}, shortV),
+        isKnown ? h("button",{className:"edit-btn", onClick:()=>{ state.qIndex=i; state.showResult=false; renderQuestion(); }}, "edit") : null
+      )
+    );
+    trayBody.appendChild(item);
+  });
+}
+
+// ─── RESULT ───────────────────────────────────────────────────────────────────
+
+function renderResult() {
+  const { module, answers } = state;
+  const conf = getConfidence(answers, module);
+  const path = getTopPath(answers, module);
+  const unknowns = getUnknowns(answers, module);
+  const isEscalation = path && path.escalate;
+
+  const slot = document.getElementById("question-slot");
+  slot.innerHTML = "";
+
+  // Update progress to 100%
+  // (slot is the question area — we replace it with result)
+
+  const wrap = h("div",{id:"result-area"},
+
+    h("div",{className:"result-h"},
+      h("h2",{}, "Recommended path: ", h("span",{className:"result-path"}, path ? path.name : "Not enough info")),
+      h("span",{className:`conf-badge conf-${conf}`}, conf+" confidence")
+    ),
+
+    isEscalation ? h("div",{className:"escalation"},
+      h("h3",{}, "⚠ Escalation required"),
+      h("p",{}, "This request needs specialist review before a clean path can be assigned. Use the copy blocks below to open a ticket or send a Slack message.")
+    ) : null,
+
+    path ? h("div",{className:"rsection"},
+      h("h4",{}, "What this path does"),
+      h("p",{}, path.desc),
+      path.bestWhen && path.bestWhen.length ? h("ul",{style:"margin-top:10px;"}, ...path.bestWhen.map(b=>h("li",{},b))) : null
+    ) : null,
+
+    h("div",{className:"rsection"},
+      h("h4",{}, "What sales should do now"),
+      h("ol",{},
+        unknowns.length ? h("li",{},"Send the buyer follow-up block below to close open items.") : null,
+        h("li",{}, isEscalation ? "Open a DataOps ticket using the JIRA description below." : "Confirm delivery method and timeline with the buyer."),
+        h("li",{}, "Once confirmed, route using the internal routing info below.")
+      )
+    ),
+
+    unknowns.length ? h("div",{className:"rsection"},
+      h("h4",{}, "Open items — still unknown"),
+      ...unknowns.map(u => h("div",{className:"unk-item"},
+        h("span",{className:"unk-dot"},"?"),
+        u
+      ))
+    ) : null,
+
+    h("div",{className:"rsection"},
+      h("h4",{}, "Internal routing"),
+      h("div",{className:"routing-grid"},
+        h("div",{className:"routing-item"},h("label",{},"Owner"),h("span",{},"[OWNER_PLACEHOLDER]")),
+        h("div",{className:"routing-item"},h("label",{},"Alias"),h("span",{},"[ALIAS_PLACEHOLDER]")),
+        h("div",{className:"routing-item"},h("label",{},"JIRA project"),h("span",{},"[JIRA_PLACEHOLDER]")),
+        h("div",{className:"routing-item"},h("label",{},"Link"),h("span",{},"[LINK_PLACEHOLDER]"))
+      )
+    ),
+
+    h("div",{className:"rsection"},
+      h("h4",{}, "Copy blocks"),
+      h("div",{className:"copy-row"},
+        makeCopyBtn("Copy Slack summary", "slack", () => slackText(module, path, conf, unknowns)),
+        makeCopyBtn("Copy buyer follow-up", "buyer", () => buyerText(unknowns)),
+        makeCopyBtn("Copy JIRA description", "jira", () => jiraText(module, path, conf, unknowns))
+      )
+    ),
+
+    h("button",{className:"btn-restart",onClick:showHome},"← Start new intake")
+  );
+
+  slot.appendChild(wrap);
+  renderSidebar();
+}
+
+function makeCopyBtn(label, key, textFn) {
+  const btn = h("button",{className:"btn-copy"}, label);
+  btn.onclick = () => {
+    copyText(textFn(), label);
+    btn.textContent = "✓ Copied";
+    btn.classList.add("copied");
+    setTimeout(()=>{ btn.textContent=label; btn.classList.remove("copied"); }, 2000);
+  };
+  return btn;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+renderHome();
+
+// ─── CHATBOT ──────────────────────────────────────────────────────────────────
+// Conversational interface driven entirely by the MODULES data.
+// No external API — all logic is rule-based using the same keyword matching
+// and confidence scoring as the main flow.
+
+const chatState = {
+  open: false,
+  messages: [],       // [{role:"bot"|"user", text, quickReplies?, resultCard?}]
+  phase: "greeting",  // greeting | identify | question | result
+  module: null,
+  qIndex: 0,
+  answers: {},
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function chatTime() {
+  return new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+}
+
+// Match free text against a list of answer options — returns best match or null
+function matchAnswer(input, options) {
+  const q = input.toLowerCase().trim();
+  // Exact match first
+  const exact = options.find(o => o.toLowerCase() === q);
+  if (exact) return exact;
+  // Starts-with / contains
+  const partial = options.find(o => o.toLowerCase().includes(q) || q.includes(o.toLowerCase().slice(0,5)));
+  if (partial) return partial;
+  return null;
+}
+
+// Find best module from free text (reuses existing scoreModule)
+function identifyModule(input) {
+  const scored = MODULES
+    .map(m => ({ m, s: scoreModule(m, input) }))
+    .filter(x => x.s > 0)
+    .sort((a,b) => b.s - a.s);
+  return scored.length ? scored[0].m : null;
+}
+
+// ── Message rendering ─────────────────────────────────────────────────────
+
+function renderChatMessages() {
+  const el = document.getElementById("chat-messages");
+  el.innerHTML = "";
+  for (const msg of chatState.messages) {
+    const wrap = document.createElement("div");
+    wrap.className = "msg " + msg.role;
+
+    const bubble = document.createElement("div");
+    bubble.className = "msg-bubble";
+    bubble.textContent = msg.text;
+    wrap.appendChild(bubble);
+
+    // Quick reply chips
+    if (msg.quickReplies && msg.quickReplies.length) {
+      const qrWrap = document.createElement("div");
+      qrWrap.className = "chat-qr";
+      for (const qr of msg.quickReplies) {
+        const chip = document.createElement("button");
+        chip.className = "chat-qr-chip" + (qr === "I don't know" ? " unk" : "");
+        chip.textContent = qr;
+        chip.onclick = () => chatHandleUserInput(qr);
+        qrWrap.appendChild(chip);
+      }
+      wrap.appendChild(qrWrap);
+    }
+
+    // Inline result card
+    if (msg.resultCard) {
+      const rc = msg.resultCard;
+      const card = document.createElement("div");
+      card.className = "chat-result";
+      card.innerHTML = `<div class="chat-result-path">${rc.pathName}</div>
+        <div class="chat-result-desc">${rc.desc}</div>`;
+
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "chat-result-btn";
+      viewBtn.textContent = "View full result";
+      viewBtn.onclick = () => {
+        closeChatPanel();
+        startModule(rc.module);
+        // pre-fill answers then jump to result
+        Object.assign(state.answers, rc.answers);
+        state.showResult = true;
+        renderResult();
+      };
+      card.appendChild(viewBtn);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "chat-result-btn ghost";
+      copyBtn.textContent = "Copy Slack summary";
+      copyBtn.onclick = () => {
+        const unknowns = getUnknowns(rc.answers, rc.module);
+        const path = getTopPath(rc.answers, rc.module);
+        const conf  = getConfidence(rc.answers, rc.module);
+        copyText(slackText(rc.module, path, conf, unknowns), "Slack summary");
+      };
+      card.appendChild(copyBtn);
+      wrap.appendChild(card);
+    }
+
+    const time = document.createElement("div");
+    time.className = "msg-time";
+    time.textContent = msg.time || chatTime();
+    wrap.appendChild(time);
+
+    el.appendChild(wrap);
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+function addMessage(role, text, extras = {}) {
+  chatState.messages.push({ role, text, time: chatTime(), ...extras });
+  renderChatMessages();
+}
+
+function showTypingThenSend(text, delay, extras = {}) {
+  const el = document.getElementById("chat-messages");
+  const ind = document.createElement("div");
+  ind.className = "msg bot";
+  ind.innerHTML = `<div class="typing-indicator">
+    <span class="typing-dot"></span>
+    <span class="typing-dot"></span>
+    <span class="typing-dot"></span>
+  </div>`;
+  el.appendChild(ind);
+  el.scrollTop = el.scrollHeight;
+  setTimeout(() => {
+    ind.remove();
+    addMessage("bot", text, extras);
+  }, delay);
+}
+
+// ── Bot conversation logic ────────────────────────────────────────────────
+
+function chatStart() {
+  chatState.phase   = "greeting";
+  chatState.module  = null;
+  chatState.qIndex  = 0;
+  chatState.answers = {};
+  chatState.messages= [];
+  addMessage("bot",
+    "Hi! I'm the Data Path Assistant. I can help you figure out the right onboarding path through conversation.\n\nWhat type of data are you looking to onboard? Describe it however you'd like.",
+    { quickReplies: MODULES.slice(0,-1).map(m => m.label).concat(["I'm not sure"]) }
+  );
+  chatState.phase = "identify";
+}
+
+function chatAskCurrentQuestion() {
+  const { module, qIndex } = chatState;
+  const q = module.questions[qIndex];
+  const isLast = qIndex === module.questions.length - 1;
+
+  const qrs = q.answers ? [...q.answers, "I don't know"] : ["I don't know"];
+
+  showTypingThenSend(q.text + (q.helper ? `\n\n${q.helper}` : ""), 600, { quickReplies: qrs });
+}
+
+function chatShowResult() {
+  const { module, answers } = chatState;
+  const path = getTopPath(answers, module);
+  const conf = getConfidence(answers, module);
+  const unknowns = getUnknowns(answers, module);
+
+  let summary = `Based on what you've shared, here's what I'd recommend:`;
+  if (unknowns.length) {
+    summary += `\n\nThere are ${unknowns.length} open item(s) still unknown — flagged in the result.`;
+  }
+
+  showTypingThenSend(summary, 700, {
+    resultCard: {
+      pathName: path ? path.name : "Not enough info yet",
+      desc: path ? path.desc : "More information is needed before a path can be confirmed.",
+      module,
+      answers: { ...answers },
+    }
+  });
+
+  setTimeout(() => {
+    showTypingThenSend(
+      "Want to start over with a different data type, or do you have more questions?",
+      1400,
+      { quickReplies: ["Start over", "Ask another question"] }
+    );
+  }, 1400);
+
+  chatState.phase = "result";
+}
+
+function chatHandleUserInput(input) {
+  if (!input.trim()) return;
+  addMessage("user", input);
+  document.getElementById("chat-input").value = "";
+
+  const text = input.toLowerCase().trim();
+
+  // ── Phase: identify module ─────────────────────────────────────────────
+  if (chatState.phase === "identify") {
+    // "start over" or similar
+    if (text.includes("start over") || text.includes("restart")) {
+      setTimeout(chatStart, 400); return;
+    }
+
+    // Check for direct module label match first
+    const directMatch = MODULES.find(m => m.label.toLowerCase() === text || input === m.label);
+    const mod = directMatch || identifyModule(input);
+
+    if (!mod || mod.id === "unknown") {
+      showTypingThenSend(
+        "I didn't quite catch that. Could you try describing the data differently? For example: emails, IP addresses, mobile IDs, website pixels…",
+        500,
+        { quickReplies: MODULES.map(m => m.label) }
+      );
+      return;
+    }
+
+    chatState.module = mod;
+    chatState.qIndex = 0;
+    chatState.answers = {};
+    chatState.phase = "question";
+    showTypingThenSend(`Got it — ${mod.label}. I'll ask you a few quick questions to find the right path.`, 500);
+    setTimeout(chatAskCurrentQuestion, 1000);
+    return;
+  }
+
+  // ── Phase: question ────────────────────────────────────────────────────
+  if (chatState.phase === "question") {
+    const q = chatState.module.questions[chatState.qIndex];
+
+    // Handle "start over"
+    if (text.includes("start over") || text.includes("restart")) {
+      setTimeout(chatStart, 400); return;
+    }
+
+    // Map input to an answer option
+    let matched;
+    if (text === "i don't know" || text === "idk" || text === "not sure" || text === "unknown") {
+      matched = "__unknown__";
+    } else {
+      matched = matchAnswer(input, q.answers || []) || input;
+    }
+
+    chatState.answers[q.id] = matched;
+
+    const isLast = chatState.qIndex === chatState.module.questions.length - 1;
+
+    if (isLast) {
+      showTypingThenSend("Got it — let me put together a recommendation.", 400);
+      setTimeout(chatShowResult, 900);
+    } else {
+      chatState.qIndex++;
+      chatAskCurrentQuestion();
+    }
+    return;
+  }
+
+  // ── Phase: result ──────────────────────────────────────────────────────
+  if (chatState.phase === "result") {
+    if (text.includes("start over") || text.includes("restart") || text.includes("another") || text.includes("different")) {
+      setTimeout(chatStart, 400); return;
+    }
+    // Try to identify a new module from their follow-up
+    const mod = identifyModule(input);
+    if (mod && mod.id !== "unknown") {
+      chatState.module = mod;
+      chatState.qIndex = 0;
+      chatState.answers = {};
+      chatState.phase = "question";
+      showTypingThenSend(`Sure, let's look at ${mod.label}.`, 400);
+      setTimeout(chatAskCurrentQuestion, 900);
+      return;
+    }
+    showTypingThenSend("Happy to help more. Say 'start over' to try a new data type, or describe what you're looking for.", 400);
+  }
+}
+
+// ── Panel open/close ──────────────────────────────────────────────────────
+
+function openChatPanel() {
+  chatState.open = true;
+  document.getElementById("chat-panel").classList.remove("hidden");
+  const fab = document.getElementById("chat-fab");
+  fab.classList.add("open");
+  fab.innerHTML = '✕';
+  if (!chatState.messages.length) chatStart();
+  setTimeout(() => document.getElementById("chat-input").focus(), 200);
+}
+
+function closeChatPanel() {
+  chatState.open = false;
+  document.getElementById("chat-panel").classList.add("hidden");
+  document.getElementById("chat-fab").classList.remove("open");
+  document.getElementById("chat-fab").innerHTML = '💬<span class="chat-badge" id="chat-badge"></span>';
+}
+
+function toggleChat() {
+  chatState.open ? closeChatPanel() : openChatPanel();
+}
+
+// ── Wire up events ────────────────────────────────────────────────────────
+
+document.getElementById("chat-fab").addEventListener("click", toggleChat);
+document.getElementById("chat-close").addEventListener("click", closeChatPanel);
+
+document.getElementById("chat-send").addEventListener("click", () => {
+  chatHandleUserInput(document.getElementById("chat-input").value);
+});
+
+document.getElementById("chat-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") chatHandleUserInput(document.getElementById("chat-input").value);
+});
+</script>
+</body>
+</html>
