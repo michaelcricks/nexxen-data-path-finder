@@ -850,17 +850,18 @@ function getUnknowns(answers, module) {
 // ─── COPY TEXT BUILDERS ───────────────────────────────────────────────────────
 
 function slackText(module, path, conf, unknowns) {
-  return `Data onboarding path request
+  return `Data onboarding request
 
-Data type: ${module.label}
+Use case: ${module.label}
 Confidence: ${conf}
 Recommended path: ${path ? path.name : "[TBD]"}
+Owner: ${path&&path.owner ? path.owner : "[TBD]"}
+JIRA project: ${path&&path.jira ? path.jira : "No ticket needed"}
 
 Missing info:
-${unknowns.length ? unknowns.map(u=>`• ${u}`).join("\n") : "• None"}
+${unknowns.length ? unknowns.map(u=>`• ${u}`).join("\n") : "• None — all info confirmed"}
 
-Needed from DataOps:
-${path && path.escalate ? "• Review and classify this request before routing further." : "• Confirm delivery method and segment structure."}`;
+${path&&path.escalate ? "⚠ Escalation required — review and classify before routing further." : "Next step: confirm delivery method and timeline, then route to owner above."}`;
 }
 
 function buyerText(unknowns) {
