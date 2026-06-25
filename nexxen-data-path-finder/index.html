@@ -1226,8 +1226,7 @@ function renderHome() {
     autoResize();
     const q = searchEl.value.trim();
     if (!q) {
-      // No search text — show filtered module cards
-      renderCards(filteredModules());
+      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
       return;
     }
 
