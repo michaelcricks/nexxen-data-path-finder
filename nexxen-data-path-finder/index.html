@@ -872,9 +872,11 @@ function buyerText(unknowns) {
 function jiraText(module, path, conf, unknowns) {
   return `Request type: Data onboarding
 
-Data type: ${module.label}
+Use case: ${module.label}
 Confidence: ${conf}
 Recommended path: ${path ? path.name : "[TBD]"}
+Owner: ${path&&path.owner ? path.owner : "[TBD]"}
+JIRA project: ${path&&path.jira ? path.jira : "No ticket needed"}
 Summary: ${path ? path.desc : "[TBD]"}
 
 Unknowns:
