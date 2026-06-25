@@ -753,53 +753,80 @@ function getTopPath(answers, module) {
     return module.paths.find(p => p.id.includes("dataops") || p.id.includes("followup") || p.id.includes("triage")) || module.paths[module.paths.length-1];
   }
 
-  if (module.id === "targeting") {
-    if (vals.includes("raw / unhashed pii")) {
-      if (vals.includes("crm") || vals.includes("customer list")) return module.paths.find(p=>p.id==="t_liveramp");
-      return module.paths.find(p=>p.id==="t_cleanroom");
-    }
-    if (vals.includes("cdp") || vals.includes("mparticle") || vals.includes("salesforce") || vals.includes("adobe") || vals.includes("coming from a cdp")) return module.paths.find(p=>p.id==="t_cdp");
-    if (vals.includes("existing alwayson") || vals.includes("existing always on") || vals.includes("yes — existing alwayson")) return module.paths.find(p=>p.id==="t_alwayson");
-    if (vals.includes("new partner") || vals.includes("new onboarder") || vals.includes("yes — new partner")) return module.paths.find(p=>p.id==="t_new_onboarder");
-    if (vals.includes("no file yet") || vals.includes("need a delivery location")) return module.paths.find(p=>p.id==="t_bucket");
-    if (vals.includes("direct from customer") || vals.includes("no —")) {
-      const supported = ["hashed emails","ip addresses","mobile ids","universal ids","nexxen cookies"];
-      if (supported.some(t => vals.includes(t))) return module.paths.find(p=>p.id==="t_inplatform");
-      return module.paths.find(p=>p.id==="t_dpc_custom");
-    }
-    // Default: if supported ID type, suggest in-platform
-    const supported = ["hashed emails","ip addresses","mobile ids","universal ids","nexxen cookies"];
-    if (supported.some(t => vals.includes(t))) return module.paths.find(p=>p.id==="t_inplatform");
+  if (module.id === "pii") {
+    if (vals.includes("legal review") || vals.includes("consent restrictions")) return module.paths.find(p=>p.id==="pii_privacy_review");
+    if (vals.includes("yes — liveramp")) return module.paths.find(p=>p.id==="pii_liveramp");
+    if (vals.includes("yes — other onboarder")) return module.paths.find(p=>p.id==="pii_other_onboarder");
+    if (vals.includes("raw / unhashed pii") && vals.includes("no onboarder")) return module.paths.find(p=>p.id==="pii_cleanroom");
+    if (vals.includes("no onboarder")) return module.paths.find(p=>p.id==="pii_dpc_direct");
     return module.paths[0];
   }
-
-  if (module.id === "measurement") {
+  if (module.id === "ip") {
+    if (vals.includes("no file yet") || vals.includes("need a delivery location")) return module.paths.find(p=>p.id==="ip_bucket_needed");
+    if (vals.includes("ip plus other metadata")) return module.paths.find(p=>p.id==="ip_metadata");
+    if (vals.includes("ip plus segment ids")) return module.paths.find(p=>p.id==="ip_inplatform_multi");
+    if (vals.includes("recurring") || vals.includes("sftp")) return module.paths.find(p=>p.id==="ip_sftp");
+    return module.paths.find(p=>p.id==="ip_inplatform_single");
+  }
+  if (module.id === "maid") {
+    if (vals.includes("third-party data provider")) return module.paths.find(p=>p.id==="maid_privacy");
+    if (vals.includes("partner portal")) return module.paths.find(p=>p.id==="maid_portal");
+    if (vals.includes("recurring") || vals.includes("sftp")) return module.paths.find(p=>p.id==="maid_sftp");
+    return module.paths.find(p=>p.id==="maid_inplatform");
+  }
+  if (module.id === "cookie") {
+    if (vals.includes("third-party dmp")) return module.paths.find(p=>p.id==="cookie_dmp");
+    if (vals.includes("nexxen pixel") || vals.includes("pixel on site")) return module.paths.find(p=>p.id==="cookie_pixel");
+    return module.paths.find(p=>p.id==="cookie_native");
+  }
+  if (module.id === "identity") {
+    if (vals.includes("rampid")) return module.paths.find(p=>p.id==="id_rampid");
+    if (vals.includes("uid2")) return module.paths.find(p=>p.id==="id_uid2");
+    if (vals.includes("id5")) return module.paths.find(p=>p.id==="id_id5");
+    return module.paths.find(p=>p.id==="id_file");
+  }
+  if (module.id === "marketplace") {
+    if (vals.includes("no — needs to be established")) return module.paths.find(p=>p.id==="mkt_commercial");
+    if (vals.includes("no taxonomy") || vals.includes("partial taxonomy")) return module.paths.find(p=>p.id==="mkt_taxonomy_review");
+    if (vals.includes("new data partner")) return module.paths.find(p=>p.id==="mkt_new");
+    if (vals.includes("existing partner")) return module.paths.find(p=>p.id==="mkt_update");
+    if (vals.includes("one advertiser only")) return module.paths.find(p=>p.id==="mkt_custom");
+    return module.paths[0];
+  }
+  if (module.id === "web") {
+    if (vals.includes("yes")) return module.paths.find(p=>p.id==="web_rules");
+    if (vals.includes("no direct tag access")) return module.paths.find(p=>p.id==="web_siteteam");
+    if (vals.includes("custom events") || vals.includes("tag manager")) return module.paths.find(p=>p.id==="web_flextag");
+    return module.paths.find(p=>p.id==="web_beacon");
+  }
+  if (module.id === "custom") {
+    if (vals.includes("no — not yet") || vals.includes("in negotiation")) return module.paths.find(p=>p.id==="cust_commercial");
+    if (vals.includes("cdp") || vals.includes("mmp") || vals.includes("appsflyer") || vals.includes("salesforce")) return module.paths.find(p=>p.id==="cust_cdp_mmp");
+    if (vals.includes("new platform-wide")) return module.paths.find(p=>p.id==="cust_platform");
+    return module.paths.find(p=>p.id==="cust_direct");
+  }
+  if (module.id === "ifo") {
     const isIFO = vals.includes("ifo") || vals.includes("circana") || vals.includes("urban science");
     const isTroubleshoot = vals.includes("troubleshoot");
-    if (isIFO && isTroubleshoot) return module.paths.find(p=>p.id==="m_ifo_fix");
-    if (isIFO) return module.paths.find(p=>p.id==="m_ifo_new");
-    if (isTroubleshoot && vals.includes("existing")) return module.paths.find(p=>p.id==="m_partner_fix");
-    if (vals.includes("automated") || vals.includes("data export to client")) return module.paths.find(p=>p.id==="m_auto_export");
-    if (vals.includes("log-level") || vals.includes("log level") || vals.includes("impression")) return module.paths.find(p=>p.id==="m_log_export");
-    if (vals.includes("offline") || vals.includes("conversion") || vals.includes("foot traffic")) return module.paths.find(p=>p.id==="m_offline");
-    return module.paths[0];
+    if (isIFO && isTroubleshoot) return module.paths.find(p=>p.id==="ifo_fix");
+    if (isTroubleshoot && vals.includes("existing")) return module.paths.find(p=>p.id==="ifo_partner_fix");
+    if (isIFO) return module.paths.find(p=>p.id==="ifo_new");
+    return module.paths.find(p=>p.id==="ifo_offline");
   }
-
-  if (module.id === "insights") {
-    if (vals.includes("pixel") || vals.includes("site")) return module.paths.find(p=>p.id==="i_pixel");
-    if (vals.includes("clean room") || vals.includes("cleanroom") || vals.includes("pii involved")) return module.paths.find(p=>p.id==="i_cleanroom");
-    if (vals.includes("export") || vals.includes("visualization")) return module.paths.find(p=>p.id==="i_export");
-    if (vals.includes("segmentation") || vals.includes("profiling")) return module.paths.find(p=>p.id==="i_segment");
-    return module.paths[0];
+  if (module.id === "logexport") {
+    if (vals.includes("automated") || vals.includes("client") || vals.includes("data queries")) return module.paths.find(p=>p.id==="log_client");
+    return module.paths.find(p=>p.id==="log_partner");
   }
-
+  if (module.id === "cleanroom") {
+    return module.paths.find(p=>p.id==="cr_setup");
+  }
   if (module.id === "unknown") {
     const filled = Object.values(answers).filter(v=>v&&v!=="__unknown__"&&!(Array.isArray(v)&&v.every(x=>x==="__unknown__"))).length;
     if (filled < 2) return module.paths.find(p=>p.id==="unk_followup");
     return module.paths.find(p=>p.id==="unk_sample");
   }
 
-  // Legacy modules (pii, ip, maid, etc.) — score bestWhen array
+  // Fallback — score bestWhen array
   let best = null, bestScore = 0;
   for (const path of module.paths) {
     if (!path.bestWhen) continue;
