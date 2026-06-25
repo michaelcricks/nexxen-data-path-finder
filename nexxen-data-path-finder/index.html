@@ -765,10 +765,8 @@ function getTopPath(answers, module) {
     return module.paths.find(p=>p.id==="cookie_native");
   }
   if (module.id === "identity") {
-    if (vals.includes("rampid")) return module.paths.find(p=>p.id==="id_rampid");
-    if (vals.includes("uid2")) return module.paths.find(p=>p.id==="id_uid2");
-    if (vals.includes("id5")) return module.paths.find(p=>p.id==="id_id5");
-    return module.paths.find(p=>p.id==="id_file");
+    if (vals.includes("recurring")) return module.paths.find(p=>p.id==="id_daop");
+    return module.paths.find(p=>p.id==="id_inplatform");
   }
   if (module.id === "marketplace") {
     if (vals.includes("no — needs to be established")) return module.paths.find(p=>p.id==="mkt_commercial");
