@@ -1281,8 +1281,8 @@ function renderHome() {
   });
   renderHome._idkReset = () => renderHome();
 
-  // Initial state — show all filtered modules
-  renderCards(filteredModules());
+  // Initial state — clean, just hint text
+  resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
   setTimeout(() => searchEl.focus(), 50);
 }
 
