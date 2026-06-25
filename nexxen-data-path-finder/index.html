@@ -308,10 +308,14 @@ a{color:inherit;text-decoration:none;}
 <!-- HOME VIEW -->
 <div id="home" class="view active">
   <div class="home-prompt">
-    <h1>What type of data are you looking to onboard to Nexxen?</h1>
+    <h1>What is this data being used for?</h1>
+    <p class="home-sub">Type a keyword, describe the use case, or paste a full email thread.</p>
   </div>
   <div class="home-search-wrap">
-    <textarea id="home-search" class="home-search" placeholder="e.g. emails, IP addresses, mobile IDs… or paste a full email thread" autocomplete="off" rows="1"></textarea>
+    <textarea id="home-search" class="home-search" placeholder="e.g. targeting with hashed emails, IP addresses, CRM onboarding…" autocomplete="off" rows="1"></textarea>
+    <button class="home-chat-btn" id="btn-chat-home" title="Chat with the Data Path Assistant">
+      💬 Chat instead
+    </button>
   </div>
   <div class="home-idk">
     <span style="font-size:13px;color:var(--g500);">Not sure what you have?</span>
