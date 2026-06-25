@@ -1295,6 +1295,7 @@ function startModule(mod) {
   document.getElementById("home").classList.remove("active");
   document.getElementById("workspace-view").classList.add("active");
   document.getElementById("btn-home").style.display = "block";
+  document.getElementById("chat-fab").style.display = "flex";
   document.getElementById("mod-tag").textContent = mod.icon + " " + mod.label;
   renderQuestion();
 }
@@ -1304,6 +1305,7 @@ function showHome() {
   document.getElementById("workspace-view").classList.remove("active");
   document.getElementById("home").classList.add("active");
   document.getElementById("btn-home").style.display = "none";
+  document.getElementById("chat-fab").style.display = "none";
 }
 
 // ─── QUESTION ─────────────────────────────────────────────────────────────────
