@@ -1953,6 +1953,24 @@ function chatHandleUserInput(input) {
 
   const text = input.toLowerCase().trim();
 
+  // ── Phase: use case selection ──────────────────────────────────────────
+  if (chatState.phase === "usecase") {
+    if (text.includes("start over") || text.includes("restart")) {
+      setTimeout(chatStart, 400); return;
+    }
+    if (text.includes("targeting") || text.includes("activation")) {
+      chatState.useCase = "targeting";
+    } else if (text.includes("measurement") || text.includes("attribution")) {
+      chatState.useCase = "measurement";
+    } else if (text.includes("insights") || text.includes("analytics")) {
+      chatState.useCase = "insights";
+    } else {
+      chatState.useCase = null; // "not sure" — show all
+    }
+    setTimeout(chatAskDataType, 400);
+    return;
+  }
+
   // ── Phase: identify module ─────────────────────────────────────────────
   if (chatState.phase === "identify") {
     // "start over" or similar
@@ -1960,15 +1978,20 @@ function chatHandleUserInput(input) {
       setTimeout(chatStart, 400); return;
     }
 
+    // Restrict search to use-case pool
+    const pool = chatState.useCase
+      ? MODULES.filter(m => m.useCases && m.useCases.includes(chatState.useCase))
+      : MODULES;
+
     // Check for direct module label match first
-    const directMatch = MODULES.find(m => m.label.toLowerCase() === text || input === m.label);
-    const mod = directMatch || identifyModule(input);
+    const directMatch = pool.find(m => m.label.toLowerCase() === text || input === m.label);
+    const mod = directMatch || identifyModule(input, pool);
 
     if (!mod || mod.id === "unknown") {
       showTypingThenSend(
         "I didn't quite catch that. Could you try describing the data differently? For example: emails, IP addresses, mobile IDs, website pixels…",
         500,
-        { quickReplies: MODULES.map(m => m.label) }
+        { quickReplies: pool.map(m => m.label) }
       );
       return;
     }
