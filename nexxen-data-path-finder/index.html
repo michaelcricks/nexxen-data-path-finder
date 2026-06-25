@@ -1271,7 +1271,7 @@ function renderHome() {
     renderCards(MODULES);
     idkBtn.textContent = "Hide options";
     idkBtn.onclick = () => {
-      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+      resultsEl.innerHTML = "";
       searchEl.value = "";
       autoResize();
       idkBtn.textContent = "Show all options →";
