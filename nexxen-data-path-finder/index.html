@@ -745,24 +745,18 @@ function getTopPath(answers, module) {
   }
 
   if (module.id === "pii") {
-    if (vals.includes("legal review") || vals.includes("consent restrictions")) return module.paths.find(p=>p.id==="pii_privacy_review");
-    if (vals.includes("yes — liveramp")) return module.paths.find(p=>p.id==="pii_liveramp");
-    if (vals.includes("yes — other onboarder")) return module.paths.find(p=>p.id==="pii_other_onboarder");
-    if (vals.includes("raw / unhashed pii") && vals.includes("no onboarder")) return module.paths.find(p=>p.id==="pii_cleanroom");
-    if (vals.includes("no onboarder")) return module.paths.find(p=>p.id==="pii_dpc_direct");
-    return module.paths[0];
+    if (vals.includes("consent or legal flag")) return module.paths.find(p=>p.id==="pii_review");
+    if (vals.includes("recurring")) return module.paths.find(p=>p.id==="pii_daop");
+    return module.paths.find(p=>p.id==="pii_inplatform");
   }
   if (module.id === "ip") {
-    if (vals.includes("no file yet") || vals.includes("need a delivery location")) return module.paths.find(p=>p.id==="ip_bucket_needed");
-    if (vals.includes("ip plus other metadata")) return module.paths.find(p=>p.id==="ip_metadata");
-    if (vals.includes("ip plus segment ids")) return module.paths.find(p=>p.id==="ip_inplatform_multi");
-    if (vals.includes("recurring") || vals.includes("sftp")) return module.paths.find(p=>p.id==="ip_sftp");
-    return module.paths.find(p=>p.id==="ip_inplatform_single");
+    if (vals.includes("recurring")) return module.paths.find(p=>p.id==="ip_daop");
+    if (vals.includes("ip plus segment ids")) return module.paths.find(p=>p.id==="ip_dpc");
+    return module.paths.find(p=>p.id==="ip_inplatform");
   }
   if (module.id === "maid") {
-    if (vals.includes("third-party data provider")) return module.paths.find(p=>p.id==="maid_privacy");
-    if (vals.includes("partner portal")) return module.paths.find(p=>p.id==="maid_portal");
-    if (vals.includes("recurring") || vals.includes("sftp")) return module.paths.find(p=>p.id==="maid_sftp");
+    if (vals.includes("recurring")) return module.paths.find(p=>p.id==="maid_daop");
+    if (vals.includes("third-party data provider")) return module.paths.find(p=>p.id==="maid_dpc");
     return module.paths.find(p=>p.id==="maid_inplatform");
   }
   if (module.id === "cookie") {
