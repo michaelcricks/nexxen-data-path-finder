@@ -1199,6 +1199,26 @@ function renderHome() {
   const searchEl  = document.getElementById("home-search");
   const resultsEl = document.getElementById("home-results");
   const idkBtn    = document.getElementById("btn-idk");
+  const ucFilter  = document.getElementById("uc-filter");
+
+  let selectedUC = "all";
+
+  // Wire up use-case chip clicks
+  if (ucFilter) {
+    ucFilter.querySelectorAll(".uc-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        ucFilter.querySelectorAll(".uc-chip").forEach(c => c.classList.remove("uc-active"));
+        chip.classList.add("uc-active");
+        selectedUC = chip.dataset.uc;
+        onInput();
+      });
+    });
+  }
+
+  function filteredModules() {
+    if (selectedUC === "all") return MODULES;
+    return MODULES.filter(m => m.useCases && m.useCases.includes(selectedUC));
+  }
 
   // Auto-resize textarea
   function autoResize() {
@@ -1231,7 +1251,8 @@ function renderHome() {
     autoResize();
     const q = searchEl.value.trim();
     if (!q) {
-      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+      // No search text — show filtered module cards
+      renderCards(filteredModules());
       return;
     }
 
@@ -1250,9 +1271,10 @@ function renderHome() {
       return;
     }
 
-    // Short text — show matching module cards as before
+    // Short text — score within the filtered set
     clearTimeout(analysisTimer);
-    const scored = MODULES
+    const pool = filteredModules();
+    const scored = pool
       .map(m => ({ mod:m, score:scoreModule(m, q) }))
       .filter(x => x.score > 0)
       .sort((a,b) => b.score - a.score)
@@ -1272,10 +1294,10 @@ function renderHome() {
   idkBtn.addEventListener("click", () => {
     searchEl.value = "";
     autoResize();
-    renderCards(MODULES);
+    renderCards(filteredModules());
     idkBtn.textContent = "Hide options";
     idkBtn.onclick = () => {
-      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+      renderCards(filteredModules());
       searchEl.value = "";
       autoResize();
       idkBtn.textContent = "Show all options →";
@@ -1285,8 +1307,8 @@ function renderHome() {
   });
   renderHome._idkReset = () => renderHome();
 
-  // Initial state
-  resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+  // Initial state — show all filtered modules
+  renderCards(filteredModules());
   setTimeout(() => searchEl.focus(), 50);
 }
 
