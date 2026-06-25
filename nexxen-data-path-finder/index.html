@@ -377,9 +377,214 @@ a{color:inherit;text-decoration:none;}
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
 const MODULES = [
-  // ── TOP LEVEL: What is the data being used for? ────────────────────────────
   {
-    id:"targeting", label:"Targeting & Activation", icon:"🎯",
+    id:"pii", label:"CRM / PII data", icon:"👤",
+    useCases:["targeting"],
+    description:"Customer lists, hashed emails, raw PII, or phone numbers requiring identity resolution.",
+    questions:[
+      {id:"pii_type",     text:"What type of customer data does the buyer have?",              helper:"Pick the primary identifier type.",                                                            answers:["Hashed emails (HEMs)","Raw / unhashed emails","Phone numbers","Name + postal address","Customer IDs","Mixed PII types"]},
+      {id:"pii_state",    text:"Is the data raw PII, hashed, or already resolved to an ad ID?",helper:"Raw PII requires an onboarding step. Hashed data may skip it.",                               answers:["Raw / unhashed PII","Hashed PII","Already mapped to an ad ID"]},
+      {id:"pii_onboarder",text:"Is the buyer working with a data onboarder?",                  helper:"E.g. LiveRamp, Neustar, Acxiom. Nexxen has existing paper with LiveRamp.",                     answers:["Yes — LiveRamp","Yes — other onboarder","No onboarder"]},
+      {id:"pii_scope",    text:"One advertiser or broader access?",                            answers:["One advertiser","Multiple advertisers","Marketplace / broadly available"]},
+      {id:"pii_privacy",  text:"Any known legal, privacy, or consent restrictions?",           helper:"Flag early — privacy issues can block or reshape the path.",                                   answers:["No known issues","Consent restrictions mentioned","Legal review in progress"]},
+    ],
+    paths:[
+      {id:"pii_liveramp",        name:"CRM via LiveRamp (Nexxen paper)",       desc:"Buyer routes raw PII through Nexxen's existing LiveRamp partnership. Use this first for any CRM data.",            owner:"Data Operations",         jira:"DAOP", bestWhen:["Yes — LiveRamp","Raw / unhashed PII","Hashed PII"]},
+      {id:"pii_other_onboarder", name:"CRM via other onboarder",               desc:"Buyer uses a non-LiveRamp onboarder. DAOP coordinates ingestion of resolved IDs.",                                 owner:"Data Operations",         jira:"DAOP", bestWhen:["Yes — other onboarder"]},
+      {id:"pii_cleanroom",       name:"Nexxen Cleanroom (raw PII, no onboarder)",desc:"Raw PII with no onboarder — requires a privacy-safe clean room. DPC leads.",                                     owner:"Data Product Consulting", jira:"DPC",  bestWhen:["No onboarder","Raw / unhashed PII"]},
+      {id:"pii_dpc_direct",      name:"1P / custom data direct from customer", desc:"Resolved or hashed IDs delivered directly from customer without a third-party onboarder. DPC leads.",               owner:"Data Product Consulting", jira:"DPC",  bestWhen:["No onboarder","Hashed PII","Already mapped"]},
+      {id:"pii_privacy_review",  name:"Legal / privacy review required",       desc:"A privacy or consent issue was flagged. Path cannot be assigned until cleared.",                                     owner:"Data Operations",         jira:"DAOP", bestWhen:["Consent restrictions","Legal review in progress"], escalate:true},
+      {id:"pii_dataops",         name:"Escalate to DataOps",                   desc:"Data shape or consent posture requires DataOps review before a path can be assigned.",                               owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"ip", label:"IP addresses", icon:"🌐",
+    useCases:["targeting"],
+    description:"Household IPs or IPs mapped to audience segments.",
+    questions:[
+      {id:"ip_shape",    text:"What is in the file?",                             helper:"Determines if this is a single audience or a segment-mapped file.",                                 answers:["IP only","IP plus segment IDs","IP plus other metadata"]},
+      {id:"ip_delivery", text:"Where does the file exist / how will it arrive?",  helper:"If no location exists, DataOps can provision an S3 bucket for recurring drops.",                   answers:["Local machine / one-off","SFTP","Partner Portal","No file yet — need a delivery location"]},
+      {id:"ip_segments", text:"One segment or multiple?",                         answers:["One segment","Multiple segments"]},
+      {id:"ip_scope",    text:"One advertiser or marketplace availability?",       answers:["One advertiser","Marketplace / broadly available"]},
+      {id:"ip_cadence",  text:"One-time or recurring?",                           helper:"Recurring files need a delivery schedule and refresh logic.",                                       answers:["One-time","Recurring"]},
+    ],
+    paths:[
+      {id:"ip_inplatform_single", name:"In-platform upload — single segment", desc:"IP-only file uploaded in-platform as a single audience. Self-serve — no ticket needed.",                owner:"Self-serve",              jira:null,   bestWhen:["IP only","One segment","One advertiser","One-time"]},
+      {id:"ip_inplatform_multi",  name:"In-platform upload — multi-segment",  desc:"IP file with segment IDs uploaded in-platform and split into multiple segments. Self-serve.",           owner:"Self-serve",              jira:null,   bestWhen:["IP plus segment IDs","Multiple segments"]},
+      {id:"ip_sftp",              name:"SFTP recurring delivery",             desc:"IP file delivered via SFTP on a recurring schedule. DAOP manages the ingestion.",                       owner:"Data Operations",         jira:"DAOP", bestWhen:["Recurring","SFTP"]},
+      {id:"ip_bucket_needed",     name:"DataOps bucket creation needed",      desc:"No delivery location exists. Ping DataOps to provision an S3 bucket for recurring drops. For one-off, use Dropbox or secure transfer — never for raw PII.", owner:"Data Operations", jira:"DAOP", bestWhen:["No file yet","need a delivery location"], escalate:true},
+      {id:"ip_taxonomy",          name:"Taxonomy required first",             desc:"File has segment IDs but no taxonomy. Taxonomy must be defined before ingestion.",                      owner:"Data Operations",         jira:"DAOP", bestWhen:["IP plus segment IDs"], escalate:true},
+      {id:"ip_metadata",          name:"Metadata review required",            desc:"Non-standard metadata — DataOps must review before assigning a path.",                                  owner:"Data Operations",         jira:"DAOP", bestWhen:["IP plus other metadata"], escalate:true},
+      {id:"ip_dataops",           name:"Escalate to DataOps",                 desc:"File shape, delivery, or segment structure is unclear.",                                                owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"maid", label:"Mobile IDs (IDFA / GAID)", icon:"📱",
+    useCases:["targeting"],
+    description:"IDFAs, GAIDs, or other mobile advertising IDs.",
+    questions:[
+      {id:"maid_type",     text:"What type of mobile IDs?",            helper:"iOS = IDFA. Android = GAID.",            answers:["IDFA (iOS)","GAID (Android)","Mixed IDFA + GAID"]},
+      {id:"maid_source",   text:"Where did the buyer get these IDs?",  helper:"Source affects privacy and delivery.",   answers:["First-party app data","Third-party data provider","CRM / DMP export"]},
+      {id:"maid_delivery", text:"How will the file be delivered?",     answers:["In-platform upload","SFTP","Partner Portal"]},
+      {id:"maid_cadence",  text:"One-time or recurring?",              answers:["One-time","Recurring"]},
+    ],
+    paths:[
+      {id:"maid_inplatform", name:"In-platform MAID upload", desc:"MAID file uploaded directly in-platform. Self-serve — no ticket needed.",          owner:"Self-serve",              jira:null,   bestWhen:["In-platform upload","One-time"]},
+      {id:"maid_sftp",       name:"SFTP MAID delivery",      desc:"Recurring MAID file delivered via SFTP. DAOP manages ingestion.",                   owner:"Data Operations",         jira:"DAOP", bestWhen:["Recurring","SFTP"]},
+      {id:"maid_portal",     name:"Partner Portal delivery",  desc:"MAID file delivered via Partner Portal. DAOP handles.",                            owner:"Data Operations",         jira:"DAOP", bestWhen:["Partner Portal"]},
+      {id:"maid_privacy",    name:"Privacy / consent review", desc:"Third-party MAID source requires consent review before ingestion. DPC leads.",     owner:"Data Product Consulting", jira:"DPC",  bestWhen:["Third-party data provider"], escalate:true},
+      {id:"maid_dataops",    name:"Escalate to DataOps",      desc:"Mobile ID type or delivery path is unclear.",                                      owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"cookie", label:"Cookies / Nexxen IDs", icon:"🍪",
+    useCases:["targeting"],
+    description:"Browser cookies or Nexxen-native user IDs.",
+    questions:[
+      {id:"cookie_type",   text:"What type of IDs?",             answers:["Nexxen cookies / IDs (native)","Third-party cookies","Browser-level IDs (non-cookie)"]},
+      {id:"cookie_source", text:"Where do these IDs come from?", answers:["Nexxen pixel on site","Third-party DMP","Publisher pass-through"]},
+      {id:"cookie_scope",  text:"One advertiser or multiple?",   answers:["One advertiser","Multiple advertisers","Marketplace"]},
+    ],
+    paths:[
+      {id:"cookie_native", name:"Nexxen native ID activation",    desc:"Nexxen-native cookies or IDs activated directly in-platform. Self-serve.",              owner:"Self-serve",              jira:null,   bestWhen:["Nexxen cookies","Nexxen pixel"]},
+      {id:"cookie_pixel",  name:"Pixel rules / site retargeting", desc:"IDs built from site pixel data using rules-based segments. DPC leads implementation.",  owner:"Data Product Consulting", jira:"DPC",  bestWhen:["Nexxen pixel on site"]},
+      {id:"cookie_dmp",    name:"DMP segment import",              desc:"Third-party DMP segment imported into Nexxen. DAOP handles.",                           owner:"Data Operations",         jira:"DAOP", bestWhen:["Third-party DMP"]},
+      {id:"cookie_dataops",name:"Escalate to DataOps",             desc:"Cookie type or source is unclear.",                                                    owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"identity", label:"Universal IDs (RampID / UID2 / ID5)", icon:"🔑",
+    useCases:["targeting"],
+    description:"Privacy-safe universal identifiers: RampID, UID2, ID5, or other.",
+    questions:[
+      {id:"id_type",     text:"Which identity standard?",        answers:["RampID (LiveRamp)","UID2 (Trade Desk)","ID5","Panorama ID","Other"]},
+      {id:"id_source",   text:"Who issued these IDs?",           answers:["Buyer generated them","A data partner provided them"]},
+      {id:"id_delivery", text:"How will the IDs be delivered?",  answers:["File-based SFTP","Partner Portal","API"]},
+    ],
+    paths:[
+      {id:"id_rampid",  name:"LiveRamp RampID activation",  desc:"RampIDs ingested via Nexxen's LiveRamp integration. DAOP handles.",  owner:"Data Operations", jira:"DAOP", bestWhen:["RampID"]},
+      {id:"id_uid2",    name:"UID2 activation",             desc:"UID2 tokens ingested via Nexxen's UID2 integration. DAOP handles.",  owner:"Data Operations", jira:"DAOP", bestWhen:["UID2"]},
+      {id:"id_id5",     name:"ID5 activation",              desc:"ID5 IDs ingested via the ID5 integration. DAOP handles.",            owner:"Data Operations", jira:"DAOP", bestWhen:["ID5"]},
+      {id:"id_file",    name:"File-based identity delivery", desc:"Identity file delivered via SFTP or Partner Portal. DAOP handles.", owner:"Data Operations", jira:"DAOP", bestWhen:["File-based SFTP","Partner Portal"]},
+      {id:"id_dataops", name:"Escalate to DataOps",         desc:"Identity type or delivery path unclear.",                            owner:"Data Operations", jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"marketplace", label:"AlwaysOn / Partner Data", icon:"🏪",
+    useCases:["targeting"],
+    description:"Syndicated data from an existing or new AlwaysOn marketplace partner.",
+    questions:[
+      {id:"mkt_partner",   text:"New partner or existing partner update?",  answers:["New data partner","Existing partner — update or expand"]},
+      {id:"mkt_access",    text:"Who should have access?",                  answers:["All buyers / marketplace-wide","Specific region or market","One advertiser only"]},
+      {id:"mkt_agreement", text:"Is there an existing partner agreement?",  answers:["Yes — agreement in place","No — needs to be established"]},
+      {id:"mkt_taxonomy",  text:"Is the taxonomy already available?",       answers:["Yes — taxonomy ready","Partial taxonomy","No taxonomy yet"]},
+    ],
+    paths:[
+      {id:"mkt_new",        name:"New AlwaysOn partner onboarding", desc:"Onboard a new data partner to the AlwaysOn marketplace. DAOP leads setup.",              owner:"Data Operations", jira:"DAOP", bestWhen:["New data partner","Agreement in place"]},
+      {id:"mkt_update",     name:"Existing AlwaysOn partner update", desc:"Update or expand existing partner data in the marketplace. DAOP handles.",               owner:"Data Operations", jira:"DAOP", bestWhen:["Existing partner"]},
+      {id:"mkt_custom",     name:"Custom / closed segment",          desc:"Data made available to a single advertiser or closed group only. DAOP manages.",         owner:"Data Operations", jira:"DAOP", bestWhen:["One advertiser only"]},
+      {id:"mkt_commercial", name:"Commercial review required",       desc:"No agreement in place. Commercial team must confirm before ingestion.",                   owner:"Data Operations", jira:"DAOP", bestWhen:["No — needs to be established"], escalate:true},
+      {id:"mkt_taxonomy_review",name:"Taxonomy review required",     desc:"Taxonomy missing or incomplete. Must be resolved before marketplace availability.",       owner:"Data Operations", jira:"DAOP", bestWhen:["No taxonomy yet","Partial taxonomy"], escalate:true},
+      {id:"mkt_dataops",    name:"Escalate to DataOps",              desc:"Data scope or structure requires DataOps review.",                                        owner:"Data Operations", jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"web", label:"Website / Pixel Data", icon:"🏷️",
+    useCases:["targeting","insights"],
+    description:"Site behavior, page visits, conversions, or pixel-based audience collection.",
+    questions:[
+      {id:"web_pixel", text:"Does the buyer already have Nexxen pixels on their site?", answers:["Yes","No"]},
+      {id:"web_events",text:"What events to capture?", helper:"Page visits, conversions, custom events.", answers:["Page visits","Conversions","Product views","Custom events","Multiple event types"]},
+      {id:"web_tags",  text:"Does the site team control tags directly?", helper:"Determines whether FlexTag or direct pixel is needed.", answers:["Yes — direct tag access","Via tag manager (GTM, Tealium, etc.)","No direct tag access"]},
+    ],
+    paths:[
+      {id:"web_rules",    name:"Existing pixel — rules-based segments", desc:"Pixel is live. Build audience segments using existing pixel rules. Self-serve.",    owner:"Self-serve",              jira:null,   bestWhen:["Yes"]},
+      {id:"web_beacon",   name:"New pixel / beacon implementation",     desc:"New Nexxen pixel needs to be placed on site. DPC leads implementation.",           owner:"Data Product Consulting", jira:"DPC",  bestWhen:["No","direct tag access"]},
+      {id:"web_flextag",  name:"FlexTag implementation",                desc:"FlexTag for flexible, multi-key event capture. DPC leads.",                        owner:"Data Product Consulting", jira:"DPC",  bestWhen:["Custom events","tag manager"]},
+      {id:"web_siteteam", name:"Site team coordination required",       desc:"Tag placement requires site team involvement. DPC coordinates.",                   owner:"Data Product Consulting", jira:"DPC",  bestWhen:["No direct tag access"]},
+      {id:"web_dataops",  name:"Escalate to DataOps",                   desc:"Web implementation complexity requires DataOps review.",                            owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"custom", label:"Custom Partner Integration", icon:"🤝",
+    useCases:["targeting"],
+    description:"Non-AlwaysOn partner integrations: CDPs, MMPs, or bespoke data arrangements.",
+    questions:[
+      {id:"cust_type",      text:"What type of integration is this?",         answers:["CDP (e.g. Salesforce, Adobe, mParticle)","MMP (e.g. Appsflyer, Adjust)","Custom data feed / bespoke pipeline","New platform-wide partner integration"]},
+      {id:"cust_agreement", text:"Is there a commercial agreement in place?", answers:["Yes","In negotiation","No — not yet"]},
+      {id:"cust_delivery",  text:"How will the data be delivered?",           answers:["API","SFTP","Partner Portal","Nexxen-managed pipeline"]},
+    ],
+    paths:[
+      {id:"cust_cdp_mmp",    name:"CDP / MMP integration",                  desc:"Partner not in AlwaysOn marketplace (CDP, MMP). DPC leads the integration.",              owner:"Data Product Consulting", jira:"DPC",  bestWhen:["CDP","MMP","Salesforce","Adobe","Appsflyer"]},
+      {id:"cust_platform",   name:"New platform-wide partner integration",   desc:"Integrating a new partner across Nexxen's full platform. DAOP leads.",                   owner:"Data Operations",         jira:"DAOP", bestWhen:["New platform-wide partner"]},
+      {id:"cust_direct",     name:"Custom / bespoke pipeline (DPC)",         desc:"Custom data feed or non-standard pipeline. DPC leads the build.",                         owner:"Data Product Consulting", jira:"DPC",  bestWhen:["Custom data feed","bespoke pipeline"]},
+      {id:"cust_commercial", name:"Commercial review required",              desc:"No agreement in place. Commercial team must review before proceeding.",                    owner:"Data Operations",         jira:"DAOP", bestWhen:["No — not yet","In negotiation"], escalate:true},
+      {id:"cust_dataops",    name:"Escalate to DataOps",                     desc:"Custom integration complexity requires DataOps triage.",                                  owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"ifo", label:"IFO & Offline Conversion", icon:"📊",
+    useCases:["measurement"],
+    description:"Offline sales, foot traffic, or IFO ingestion (Circana, Urban Science).",
+    questions:[
+      {id:"ifo_type",   text:"What type of measurement data is this?",        answers:["IFO ingestion (Circana, Urban Science)","Offline sales / point-of-sale","Foot traffic / location data","Other conversion data"]},
+      {id:"ifo_status", text:"New setup or troubleshooting an existing one?", answers:["New setup","Troubleshooting / existing issue"]},
+      {id:"ifo_partner",text:"Is there a partner involved?",                  answers:["Yes — existing integrated partner","Yes — new partner","No — direct from client"]},
+    ],
+    paths:[
+      {id:"ifo_new",     name:"IFO ingestion — new setup",              desc:"Set up IFO ingestion with a new partner (e.g. Circana, Urban Science). DPC leads.",       owner:"Data Product Consulting", jira:"DPC",  bestWhen:["IFO","New setup"]},
+      {id:"ifo_fix",     name:"IFO ingestion — troubleshoot",           desc:"Troubleshoot an existing IFO ingestion on behalf of a client. DAOP handles.",              owner:"Data Operations",         jira:"DAOP", bestWhen:["IFO","Troubleshoot"]},
+      {id:"ifo_partner_fix",name:"Troubleshoot existing partner ingestion",desc:"Troubleshoot data ingestion through an existing integrated partner. DAOP handles.",     owner:"Data Operations",         jira:"DAOP", bestWhen:["existing integrated partner","Troubleshoot"]},
+      {id:"ifo_offline", name:"Offline / conversion data ingestion",     desc:"Ingest offline sales or conversion data for attribution. DPC leads.",                     owner:"Data Product Consulting", jira:"DPC",  bestWhen:["Offline sales","conversion","foot traffic"]},
+      {id:"ifo_dataops", name:"Escalate to DataOps",                     desc:"Measurement setup is unclear. DataOps triage required.",                                   owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"logexport", label:"Log-level & Data Exports", icon:"📋",
+    useCases:["measurement","insights"],
+    description:"Log-level impression data or automated exports to clients or partners.",
+    questions:[
+      {id:"log_type",     text:"What type of data export is this?", answers:["Log-level impression / click data to a partner","Automated log-level export to client (Data Queries)","User-level data export"]},
+      {id:"log_recipient",text:"Who is receiving the data?",        answers:["A mutual measurement partner","The client directly","An internal team"]},
+      {id:"log_cadence",  text:"One-time or ongoing / automated?",  answers:["One-time","Ongoing / automated"]},
+    ],
+    paths:[
+      {id:"log_partner", name:"Log-level export to partner", desc:"Send log-level data to a mutual partner for measurement or visualization. DPC leads via TSCON.",            owner:"Data Product Consulting", jira:"TSCON", bestWhen:["mutual partner","Log-level"]},
+      {id:"log_client",  name:"Automated export to client",  desc:"Enable automated log-level or user-level exports from Data Queries to clients. DPC leads via TSCON.",      owner:"Data Product Consulting", jira:"TSCON", bestWhen:["Automated","client","Data Queries"]},
+      {id:"log_dataops", name:"Escalate to DataOps",         desc:"Export setup is unclear. DataOps triage required.",                                                         owner:"Data Operations",         jira:"DAOP",  bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"cleanroom", label:"Nexxen Cleanroom", icon:"🔒",
+    useCases:["insights"],
+    description:"PII-safe collaborative data environment for analysis or matching.",
+    questions:[
+      {id:"cr_purpose", text:"What is the clean room being used for?",  answers:["Audience matching / overlap analysis","PII-safe data collaboration","Attribution without ID sharing","Other"]},
+      {id:"cr_pii",     text:"Does this involve raw or unhashed PII?",  answers:["Yes — raw PII","No — already hashed or anonymized","Not sure"]},
+      {id:"cr_partner", text:"Is there a partner involved?",            answers:["Yes — existing partner","Yes — new partner","No"]},
+    ],
+    paths:[
+      {id:"cr_setup",   name:"Nexxen Cleanroom setup", desc:"Set up a Nexxen Cleanroom environment for PII-safe collaboration. DPC leads.",   owner:"Data Product Consulting", jira:"DPC",  bestWhen:["clean room","PII","collaboration"]},
+      {id:"cr_dataops", name:"Escalate to DataOps",    desc:"Cleanroom setup is unclear or requires specialist triage.",                       owner:"Data Operations",         jira:"DAOP", bestWhen:["Multiple unknowns"], escalate:true},
+    ],
+  },
+  {
+    id:"unknown", label:"I am not sure", icon:"❓",
+    useCases:["targeting","measurement","insights"],
+    description:"Not sure what type of data or what it's being used for.",
+    questions:[
+      {id:"unk_words",   text:"What exact words did the buyer use?",                     helper:"Their phrasing often reveals the data type and use case.", type:"text"},
+      {id:"unk_purpose", text:"Is this about targeting, measurement, or insights?",      answers:["Targeting / reaching audiences","Measurement / tracking outcomes","Insights / understanding audiences","Not sure"]},
+      {id:"unk_ids",     text:"Did the buyer mention any of these?",                     type:"multi", answers:["Email","Phone","Customer list","IP address","Mobile device ID","Cookie","RampID / UID2 / ID5","Hashed email","None of these"]},
+      {id:"unk_partner", text:"Is there a data provider or onboarder involved?",         answers:["Yes — they mentioned one","No","Not sure"]},
+    ],
+    paths:[
+      {id:"unk_sample",  name:"Request sample file",     desc:"Ask for a sample file or column headers — that usually identifies the data type within seconds.",        owner:"Self-serve",      jira:null,   bestWhen:["Data type unclear"]},
+      {id:"unk_followup",name:"Buyer follow-up required",desc:"Not enough information to route. Use the follow-up block to get what you need from the buyer.",         owner:"Self-serve",      jira:null,   bestWhen:["Most answers unknown"]},
+      {id:"unk_dataops", name:"DataOps triage",          desc:"Escalate to DataOps for initial triage and classification.",                                            owner:"Data Operations", jira:"DAOP", bestWhen:["Complex or unusual data","Multiple unknowns"], escalate:true},
+    ],
+  },
+];
     description:"Onboard audience data to reach the right people in Nexxen campaigns.",
     questions:[
       {id:"t_data_type",     text:"What type of data are you onboarding?",              helper:"Start with the source — this shapes the whole path.",                                                                                                  answers:["CRM / customer list","Website / pixel data","Mobile app data","Third-party / partner data","Offline / in-store data"]},
