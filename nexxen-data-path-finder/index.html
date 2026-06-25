@@ -316,7 +316,13 @@ a{color:inherit;text-decoration:none;}
 <div id="home" class="view active">
   <div class="home-prompt">
     <h1>What is this data being used for?</h1>
-    <p class="home-sub">Type a keyword, describe the use case, or paste a full email thread.</p>
+    <p class="home-sub">Select a use case below, or type a keyword, describe the use case, or paste a full email thread.</p>
+  </div>
+  <div class="uc-filter" id="uc-filter">
+    <button class="uc-chip uc-active" data-uc="all">All</button>
+    <button class="uc-chip" data-uc="targeting">🎯 Targeting & Activation</button>
+    <button class="uc-chip" data-uc="measurement">📊 Measurement & Attribution</button>
+    <button class="uc-chip" data-uc="insights">💡 Insights & Analytics</button>
   </div>
   <div class="home-search-wrap">
     <textarea id="home-search" class="home-search" placeholder="e.g. targeting with hashed emails, IP addresses, CRM onboarding…" autocomplete="off" rows="1"></textarea>
