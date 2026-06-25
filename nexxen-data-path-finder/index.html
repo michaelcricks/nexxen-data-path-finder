@@ -993,43 +993,58 @@ function scoreModule(mod, query) {
 // For each answer option, build a list of signals to look for in thread text.
 // Falls back to just using the answer text itself when no special mapping exists.
 const ANSWER_SIGNALS = {
-  // IP questions
-  "IP only":                  ["ip only","ip-only","ip address","ip addresses","ips only","just ip","only ip"],
-  "IP plus segment IDs":      ["ip plus segment","ip with segment","segment id","segment_id","tab.*segment","ip.*mapped"],
-  "IP plus other metadata":   ["ip plus","ip with metadata","non-standard"],
-  "Yes — SFTP":               ["sftp","ftp","file transfer","deliver.*sftp","sftp.*deliver"],
-  "Yes — Partner Portal":     ["partner portal","partnerportal"],
-  "One segment":              ["one segment","single segment","1 segment"],
-  "Multiple segments":        ["multiple segment","multi.*segment","segment.*multiple","three segment","several segment","auto_001","auto_014","suv.*ev","in market.*suv"],
-  "One advertiser":           ["one advertiser","single advertiser","single-advertiser","one client","northstar only","locked to","advertiser only","advertiser id","custom.*advertiser","not.*all advertiser","cannot approve.*all","for their own"],
-  "Marketplace / broadly available": ["marketplace","broadly available","alwayson","always on","all advertiser","resale","multi-advertiser"],
-  "One-time / static":        ["one.time","one-time","static file","single upload","one time"],
-  "Recurring":                ["recurring","weekly","monthly","daily","regular.*deliver","deliver.*week","deliver.*month","refresh","ongoing","cadence"],
-  // PII questions
-  "Emails / hashed emails":   ["email","hashed email","hem","sha256","md5"],
-  "Phone numbers":            ["phone","mobile number","telephone"],
-  "Name + address (postal)":  ["name.*address","postal","mailing","crm.*address"],
-  "Mix of PII types":         ["mix.*pii","multiple.*pii","combination"],
-  // MAID
-  "IDFA (iOS)":               ["idfa","ios","apple"],
-  "GAID (Android)":           ["gaid","android","google.*id"],
-  "Mixed IDFA + GAID":        ["mixed","idfa.*gaid","gaid.*idfa"],
-  // Cookie
-  "Nexxen cookies (Nexxen-native)": ["nexxen cookie","nexxen.*native","nexxen id"],
-  "Third-party cookies":      ["third.party cookie","3p cookie","3rd party cookie"],
-  // Identity
-  "RampID (LiveRamp)":        ["rampid","liveramp","ramp id"],
-  "UID2 (Trade Desk)":        ["uid2","trade desk","uid 2"],
-  "ID5":                      ["id5"],
-  // Delivery
-  "API":                      ["\\bapi\\b","api endpoint","api delivery","programmatic.*ingest"],
-  "File-based SFTP":          ["sftp","file.*sftp","sftp.*file"],
-  "Partner Portal":           ["partner portal"],
-  // Syndicated
-  "Syndicated (pre-built segments)": ["syndicated","pre.built","alwayson","always on","marketplace.*segment"],
-  "Custom (built for one buyer)":    ["custom.*buyer","built for","one buyer","custom.*single","bespoke"],
-  // Scope
-  "All advertisers in market":       ["all advertiser","market.wide","market level","all.*market"],
+  // ── Targeting: data type ───────────────────────────────────────────────────
+  "CRM / customer list":              ["crm","customer list","customer data","first.party","1p data","contact list"],
+  "Website / pixel data":             ["website","pixel","site data","web behavior","page visit","beacon"],
+  "Mobile app data":                  ["mobile app","app data","in.app","idfa","gaid"],
+  "Third-party / partner data":       ["third.party","3p data","data partner","syndicated","alwayson","always on","marketplace"],
+  "Offline / in-store data":          ["offline","in.store","pos","point of sale","foot traffic","store visit"],
+  // ── Targeting: ID type ────────────────────────────────────────────────────
+  "Hashed emails (HEMs)":             ["hashed email","hem","sha256","md5","hashed.*email"],
+  "IP addresses":                     ["ip only","ip address","ip addresses","ips only","ip.only","identifier.*ip"],
+  "Mobile IDs (IDFA / GAID)":         ["idfa","gaid","mobile id","maids","mobile advertising","device id"],
+  "Universal IDs (RampID / UID2 / ID5)": ["rampid","uid2","id5","universal id","liveramp","trade desk","ramp id"],
+  "Nexxen cookies / IDs":             ["nexxen cookie","nexxen id","nexxen.*native","nexxen.*cookie"],
+  "Raw / unhashed PII":               ["raw pii","unhashed","plain email","plain text email","pii.*raw","raw.*email","name.*address"],
+  // ── Targeting: partner ────────────────────────────────────────────────────
+  "Yes — existing AlwaysOn partner":  ["alwayson","always on","existing partner","existing data partner","existing.*alwayson"],
+  "Yes — new partner or onboarder":   ["new partner","new onboarder","new data partner","new.*partner"],
+  "No — direct from customer":        ["direct from","no partner","no onboarder","customer.*direct","from customer","direct.*customer"],
+  "Coming from a CDP (e.g. Salesforce, Adobe, mParticle)": ["cdp","salesforce","adobe","mparticle","customer data platform"],
+  // ── Targeting: file location ──────────────────────────────────────────────
+  "Local machine":                    ["local machine","local file","local computer","desktop","laptop"],
+  "SFTP":                             ["sftp","ftp","file transfer protocol","sftp.*deliver","deliver.*sftp"],
+  "S3 / cloud storage":               ["s3","aws","cloud storage","s3 bucket","azure blob","gcs"],
+  "CDP":                              ["cdp","salesforce","adobe","mparticle"],
+  "No file yet — need a delivery location": ["no file","no delivery","need.*delivery","need.*location","no.*location","no.*sftp","no.*bucket"],
+  // ── Targeting: cadence ────────────────────────────────────────────────────
+  "One-time":                         ["one.time","one-time","static","single upload","one time","one.off"],
+  "Recurring / ongoing":              ["recurring","weekly","monthly","daily","ongoing","cadence","regular.*deliver","deliver.*week","refresh"],
+  // ── Measurement ───────────────────────────────────────────────────────────
+  "Offline sales / conversion data":  ["offline sales","conversion data","sales data","offline conversion","point of sale"],
+  "Foot traffic / location data":     ["foot traffic","location data","store visit","in.store visit"],
+  "IFO ingestion (e.g. Circana, Urban Science)": ["ifo","circana","urban science","incremental footprint"],
+  "Log-level impression / click data":["log.level","impression data","click data","log level data","raw log"],
+  "Automated data export to client or partner": ["automated export","automated.*data","data queries","automated.*deliver","data export"],
+  "New setup":                        ["new setup","new integration","first time","set up","implement"],
+  "Troubleshooting / existing issue": ["troubleshoot","issue","problem","not working","broken","fix","debug","existing.*issue"],
+  "Yes — existing integrated partner":["existing partner","existing.*integrated","current partner","already integrated"],
+  "Yes — new partner":                ["new partner","new.*measurement","new.*partner"],
+  "No — direct from client":          ["direct from client","client.*direct","no partner","from client"],
+  // ── Insights ──────────────────────────────────────────────────────────────
+  "Nexxen pixel on client site":      ["pixel","beacon","flextag","flex tag","site pixel","tracking pixel"],
+  "Data clean room":                  ["clean room","cleanroom","privacy.*data","collaborative.*data"],
+  "Data export to client or partner": ["data export","export.*client","export.*partner","send.*data","log.*export"],
+  "Audience segmentation / profiling":["segmentation","profiling","audience.*build","segment.*build"],
+  "Yes — PII involved":               ["pii","personal.*data","email.*plain","name.*address","unhashed"],
+  "No — anonymized or aggregated only":["anonymized","aggregated","no pii","privacy.safe","hashed only"],
+  // ── Legacy IP signals (kept for backward compat) ──────────────────────────
+  "IP only":                          ["ip only","ip-only","identifier.*ip","ip address"],
+  "IP plus segment IDs":              ["ip plus segment","segment id","ip.*segment"],
+  "One segment":                      ["one segment","single segment"],
+  "Multiple segments":                ["multiple segment","several segment","segment.*multiple","three segment"],
+  "One advertiser":                   ["one advertiser","single advertiser","northstar only","locked to","for their own","advertiser only"],
+  "Marketplace / broadly available":  ["marketplace","broadly available","all advertiser","multi-advertiser"],
 };
 
 function signalScore(answerLabel, text) {
