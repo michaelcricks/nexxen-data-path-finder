@@ -1245,9 +1245,9 @@ function renderHome() {
       return;
     }
 
-    // Short text — score within the filtered set
+    // Short text — score all modules
     clearTimeout(analysisTimer);
-    const pool = filteredModules();
+    const pool = MODULES;
     const scored = pool
       .map(m => ({ mod:m, score:scoreModule(m, q) }))
       .filter(x => x.score > 0)
