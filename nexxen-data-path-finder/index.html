@@ -1268,10 +1268,10 @@ function renderHome() {
   idkBtn.addEventListener("click", () => {
     searchEl.value = "";
     autoResize();
-    renderCards(filteredModules());
+    renderCards(MODULES);
     idkBtn.textContent = "Hide options";
     idkBtn.onclick = () => {
-      renderCards(filteredModules());
+      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
       searchEl.value = "";
       autoResize();
       idkBtn.textContent = "Show all options →";
