@@ -769,51 +769,67 @@ function getTopPath(answers, module) {
   if (!module || !module.paths.length) return null;
   const vals = Object.values(answers).flat().join(" ").toLowerCase();
 
-  // Privacy/legal escalation first
-  if (vals.includes("consent") || vals.includes("legal review")) {
-    return module.paths.find(p => p.id.includes("privacy") || p.id.includes("legal")) || module.paths[module.paths.length-1];
-  }
-  // Unknown-heavy → escalate
+  // Unknown-heavy → escalate to dataops/followup
   const unknCount = Object.values(answers).filter(v => v === "__unknown__" || (Array.isArray(v) && v.includes("__unknown__"))).length;
   const totalAnswered = Object.keys(answers).length;
   if (unknCount >= 2 || (totalAnswered > 0 && unknCount / totalAnswered > 0.4)) {
     return module.paths.find(p => p.id.includes("dataops") || p.id.includes("followup") || p.id.includes("triage")) || module.paths[module.paths.length-1];
   }
 
-  if (module.id === "pii") {
-    if (vals.includes("suppression only") || (vals.includes("suppression") && !vals.includes("targeting") && !vals.includes("measurement"))) return module.paths.find(p=>p.id==="pii_suppression");
-    if (vals.includes("measurement only") || (vals.includes("measurement") && !vals.includes("targeting"))) return module.paths.find(p=>p.id==="pii_measurement");
-    if (vals.includes("livecamp") || vals.includes("liveramp") || vals.includes("yes — livecamp") || vals.includes("yes — liveramp")) return module.paths.find(p=>p.id==="pii_direct_onboarder");
-    if (vals.includes("no onboarder")) return module.paths.find(p=>p.id==="pii_nexxen_mapping");
+  if (module.id === "targeting") {
+    if (vals.includes("raw / unhashed pii")) {
+      if (vals.includes("crm") || vals.includes("customer list")) return module.paths.find(p=>p.id==="t_liveramp");
+      return module.paths.find(p=>p.id==="t_cleanroom");
+    }
+    if (vals.includes("cdp") || vals.includes("mparticle") || vals.includes("salesforce") || vals.includes("adobe") || vals.includes("coming from a cdp")) return module.paths.find(p=>p.id==="t_cdp");
+    if (vals.includes("existing alwayson") || vals.includes("existing always on") || vals.includes("yes — existing alwayson")) return module.paths.find(p=>p.id==="t_alwayson");
+    if (vals.includes("new partner") || vals.includes("new onboarder") || vals.includes("yes — new partner")) return module.paths.find(p=>p.id==="t_new_onboarder");
+    if (vals.includes("no file yet") || vals.includes("need a delivery location")) return module.paths.find(p=>p.id==="t_bucket");
+    if (vals.includes("direct from customer") || vals.includes("no —")) {
+      const supported = ["hashed emails","ip addresses","mobile ids","universal ids","nexxen cookies"];
+      if (supported.some(t => vals.includes(t))) return module.paths.find(p=>p.id==="t_inplatform");
+      return module.paths.find(p=>p.id==="t_dpc_custom");
+    }
+    // Default: if supported ID type, suggest in-platform
+    const supported = ["hashed emails","ip addresses","mobile ids","universal ids","nexxen cookies"];
+    if (supported.some(t => vals.includes(t))) return module.paths.find(p=>p.id==="t_inplatform");
     return module.paths[0];
   }
-  if (module.id === "ip") {
-    if (vals.includes("ip plus other")) return module.paths.find(p=>p.id==="ip_metadata");
-    if (vals.includes("ip plus segment")) return module.paths.find(p=>p.id==="ip_platform_multi");
-    if (vals.includes("sftp")) return module.paths.find(p=>p.id==="ip_sftp");
-    if (vals.includes("partner portal")) return module.paths.find(p=>p.id==="ip_partner_portal");
-    if (vals.includes("ip only")) return module.paths.find(p=>p.id==="ip_platform_single");
+
+  if (module.id === "measurement") {
+    const isIFO = vals.includes("ifo") || vals.includes("circana") || vals.includes("urban science");
+    const isTroubleshoot = vals.includes("troubleshoot");
+    if (isIFO && isTroubleshoot) return module.paths.find(p=>p.id==="m_ifo_fix");
+    if (isIFO) return module.paths.find(p=>p.id==="m_ifo_new");
+    if (isTroubleshoot && vals.includes("existing")) return module.paths.find(p=>p.id==="m_partner_fix");
+    if (vals.includes("automated") || vals.includes("data export to client")) return module.paths.find(p=>p.id==="m_auto_export");
+    if (vals.includes("log-level") || vals.includes("log level") || vals.includes("impression")) return module.paths.find(p=>p.id==="m_log_export");
+    if (vals.includes("offline") || vals.includes("conversion") || vals.includes("foot traffic")) return module.paths.find(p=>p.id==="m_offline");
     return module.paths[0];
   }
-  if (module.id === "web") {
-    if (vals.includes("yes")) return module.paths.find(p=>p.id==="web_pixel_rules");
-    if (vals.includes("no direct")) return module.paths.find(p=>p.id==="web_site_team");
-    if (vals.includes("custom events") || vals.includes("flextag")) return module.paths.find(p=>p.id==="web_flextag");
-    return module.paths[1];
-  }
-  if (module.id === "marketplace") {
-    if (vals.includes("new partner")) return module.paths.find(p=>p.id==="mkt_new");
-    if (vals.includes("existing partner")) return module.paths.find(p=>p.id==="mkt_update");
-    if (vals.includes("no — needs") || vals.includes("unknown / tbd")) return module.paths.find(p=>p.id==="mkt_commercial");
-    if (vals.includes("no taxonomy")) return module.paths.find(p=>p.id==="mkt_taxonomy_review");
+
+  if (module.id === "insights") {
+    if (vals.includes("pixel") || vals.includes("site")) return module.paths.find(p=>p.id==="i_pixel");
+    if (vals.includes("clean room") || vals.includes("cleanroom") || vals.includes("pii involved")) return module.paths.find(p=>p.id==="i_cleanroom");
+    if (vals.includes("export") || vals.includes("visualization")) return module.paths.find(p=>p.id==="i_export");
+    if (vals.includes("segmentation") || vals.includes("profiling")) return module.paths.find(p=>p.id==="i_segment");
     return module.paths[0];
   }
+
   if (module.id === "unknown") {
     const filled = Object.values(answers).filter(v=>v&&v!=="__unknown__"&&!(Array.isArray(v)&&v.every(x=>x==="__unknown__"))).length;
     if (filled < 2) return module.paths.find(p=>p.id==="unk_followup");
     return module.paths.find(p=>p.id==="unk_sample");
   }
-  return module.paths[0];
+
+  // Legacy modules (pii, ip, maid, etc.) — score bestWhen array
+  let best = null, bestScore = 0;
+  for (const path of module.paths) {
+    if (!path.bestWhen) continue;
+    const score = path.bestWhen.filter(b => vals.includes(b.toLowerCase())).length;
+    if (score > bestScore) { bestScore = score; best = path; }
+  }
+  return best || module.paths[0];
 }
 
 function getUnknowns(answers, module) {
