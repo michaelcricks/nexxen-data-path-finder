@@ -1195,25 +1195,6 @@ function renderHome() {
   const idkBtn    = document.getElementById("btn-idk");
   const ucFilter  = document.getElementById("uc-filter");
 
-  let selectedUC = "all";
-
-  // Wire up use-case chip clicks
-  if (ucFilter) {
-    ucFilter.querySelectorAll(".uc-chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        ucFilter.querySelectorAll(".uc-chip").forEach(c => c.classList.remove("uc-active"));
-        chip.classList.add("uc-active");
-        selectedUC = chip.dataset.uc;
-        onInput();
-      });
-    });
-  }
-
-  function filteredModules() {
-    if (selectedUC === "all") return MODULES;
-    return MODULES.filter(m => m.useCases && m.useCases.includes(selectedUC));
-  }
-
   // Auto-resize textarea
   function autoResize() {
     searchEl.style.height = "auto";
