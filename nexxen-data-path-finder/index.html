@@ -1854,8 +1854,8 @@ function chatStart() {
   chatState.answers = {};
   chatState.messages= [];
   addMessage("bot",
-    "Hi! I'm the Data Path Assistant. I can help you figure out the right onboarding path through conversation.\n\nWhat type of data are you looking to onboard? Describe it however you'd like.",
-    { quickReplies: MODULES.slice(0,-1).map(m => m.label).concat(["I'm not sure"]) }
+    "Hi! I'm the Data Path Assistant. I'll help you find the right onboarding path.\n\nFirst — what is this data being used for?",
+    { quickReplies: ["Targeting & Activation","Measurement & Attribution","Insights & Analytics","I'm not sure"] }
   );
   chatState.phase = "identify";
 }
