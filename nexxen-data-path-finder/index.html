@@ -1226,7 +1226,7 @@ function renderHome() {
     autoResize();
     const q = searchEl.value.trim();
     if (!q) {
-      resultsEl.innerHTML = `<div class="home-hint">Start typing to see matching data types.</div>`;
+      resultsEl.innerHTML = "";
       return;
     }
 
