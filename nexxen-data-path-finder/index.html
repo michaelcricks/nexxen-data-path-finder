@@ -1654,10 +1654,10 @@ function renderResult() {
     h("div",{className:"rsection"},
       h("h4",{}, "Internal routing"),
       h("div",{className:"routing-grid"},
-        h("div",{className:"routing-item"},h("label",{},"Owner"),h("span",{},"[OWNER_PLACEHOLDER]")),
-        h("div",{className:"routing-item"},h("label",{},"Alias"),h("span",{},"[ALIAS_PLACEHOLDER]")),
-        h("div",{className:"routing-item"},h("label",{},"JIRA project"),h("span",{},"[JIRA_PLACEHOLDER]")),
-        h("div",{className:"routing-item"},h("label",{},"Link"),h("span",{},"[LINK_PLACEHOLDER]"))
+        h("div",{className:"routing-item"},h("label",{},"Owner"),h("span",{className: path&&path.owner==="Data Product Consulting"?"owner-dpc":path&&path.owner==="Data Operations"?"owner-daop":""}, path&&path.owner ? path.owner : "—")),
+        h("div",{className:"routing-item"},h("label",{},"JIRA project"),h("span",{className:path&&path.jira?"jira-badge":""}, path&&path.jira ? path.jira : "No ticket needed")),
+        h("div",{className:"routing-item"},h("label",{},"Escalation"),h("span",{}, isEscalation ? "Yes — requires specialist review" : "No")),
+        h("div",{className:"routing-item"},h("label",{},"Self-serve?"),h("span",{}, path&&path.owner==="Self-serve" ? "✓ Yes — no ticket needed" : "No — engage team above"))
       )
     ),
 
