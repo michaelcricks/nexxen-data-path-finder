@@ -1779,8 +1779,9 @@ function matchAnswer(input, options) {
 }
 
 // Find best module from free text (reuses existing scoreModule)
-function identifyModule(input) {
-  const scored = MODULES
+function identifyModule(input, pool) {
+  const source = pool || MODULES;
+  const scored = source
     .map(m => ({ m, s: scoreModule(m, input) }))
     .filter(x => x.s > 0)
     .sort((a,b) => b.s - a.s);
