@@ -1889,10 +1889,19 @@ function chatStart() {
   chatState.qIndex  = 0;
   chatState.answers = {};
   chatState.messages= [];
+  chatState.useCase = null;
   addMessage("bot",
     "Hi! I'm the Data Path Assistant. I'll help you find the right onboarding path.\n\nFirst — what is this data being used for?",
-    { quickReplies: ["Targeting & Activation","Measurement & Attribution","Insights & Analytics","I'm not sure"] }
+    { quickReplies: ["🎯 Targeting & Activation","📊 Measurement & Attribution","💡 Insights & Analytics","I'm not sure"] }
   );
+  chatState.phase = "usecase";
+}
+
+function chatAskDataType() {
+  const uc = chatState.useCase;
+  const pool = uc ? MODULES.filter(m => m.useCases && m.useCases.includes(uc)) : MODULES;
+  const chips = pool.map(m => m.label);
+  showTypingThenSend("What type of data do you have?", 500, { quickReplies: chips });
   chatState.phase = "identify";
 }
 
