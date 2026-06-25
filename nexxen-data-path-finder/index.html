@@ -927,15 +927,20 @@ function h(tag, attrs, ...children) {
 // Add synonyms here as you learn how buyers describe their data.
 
 const MODULE_KEYWORDS = {
-  pii:         ["email","emails","crm","pii","hashed","hashed email","customer","customers","phone","name","address","customer list","contacts","first party","first-party","raw pii"],
-  ip:          ["ip","ips","ip address","ip addresses","household ip","internet protocol","household","ip file","ips and segments"],
-  maid:        ["mobile","maid","maids","idfa","gaid","device id","device ids","app data","ios","android","mobile id","mobile advertising"],
-  cookie:      ["cookie","cookies","nexxen id","browser","browser id","pixel id","web id"],
-  identity:    ["rampid","ramp id","uid2","id5","identity","universal id","panorama","panorama id","liveramp","trade desk","privacy id","resolved id"],
-  web:         ["website","pixel","site","beacon","flextag","flex tag","tag","page visit","conversion","web data","site data","pixel data","site behavior","web behavior"],
-  marketplace: ["marketplace","syndicated","always on","alwayson","data provider","third party","third-party","audience data","taxonomy","segment data"],
-  custom:      ["custom","partner","bespoke","integration","custom feed","custom data","custom segment","non-standard"],
-  unknown:     ["not sure","don't know","unsure","unknown","no idea","unclear"],
+  // Primary modules
+  targeting:   ["targeting","activation","audience","reach","campaign","onboard","segment","upload","first party","1p","crm","customer list","customer data","mobile app","third party","third-party","partner data","offline","in-store","hems","maids","ips","uid","identity","liveramp","alwayson","always on","sftp","ip address","ip addresses","hashed email","maid","idfa","gaid","rampid","uid2","id5","cookie","nexxen id","pii","raw pii"],
+  measurement: ["measurement","attribution","conversion","offline sales","ifo","circana","urban science","log level","log-level","impression data","foot traffic","tracking","outcomes","results","report","automated export","data queries","urban","circana"],
+  insights:    ["insights","analytics","pixel","cleanroom","clean room","segmentation","profiling","export","data collection","site data","behavioral","audience insights","visualization","site behavior"],
+  unknown:     ["not sure","don't know","unsure","unknown","no idea","unclear","help","confused"],
+  // Legacy modules (still accessible via direct search)
+  pii:         ["email","emails","hashed","hashed email","phone","name","address","contacts","raw pii","crm data"],
+  ip:          ["ip","ips","ip addresses","household ip","internet protocol","ip file","ip segment"],
+  maid:        ["mobile id","device id","idfa","gaid","ios id","android id","mobile advertising"],
+  cookie:      ["cookie","cookies","browser","browser id","web id"],
+  identity:    ["rampid","uid2","id5","universal id","panorama id","resolved id"],
+  web:         ["website","pixel","beacon","flextag","flex tag","page visit","web data","web behavior"],
+  marketplace: ["marketplace","syndicated","alwayson","taxonomy"],
+  custom:      ["custom","bespoke","custom feed","custom segment","non-standard"],
 };
 
 // Simple negation: returns true if a keyword appears right after a negating word
